@@ -1,9 +1,10 @@
 psVox
 =====
 
-torquescript pseudo-voxel system
+torquescript pseudo-voxel system  
 
 =====
+
 features:  
 +chunk/sub-chunk-based voxel system  
 +block data objects using blastoff  
