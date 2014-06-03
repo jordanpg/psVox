@@ -31,7 +31,10 @@ function SimplexNoise(%seed)
 
 function SimplexNoise::setSeed(%this, %seed)
 {
-	if(%seed == %this.seed)
+	if(!%seed)
+		%seed = 0;
+
+	if(%seed $= %this.seed)
 		return;
 
 	%p = "151\t160\t137\t91\t90\t15" TAB
@@ -91,8 +94,11 @@ function SimplexNoise::noise2d(%this, %x, %y, %seed)
 	%ii = %i & 255;
 	%jj = %j & 255;
 	%gi0 = %this.perm[%ii + %this.perm[%jj]] % 12;
+	// echo(1 SPC %gi0);
 	%gi1 = %this.perm[%ii + %i1 + %this.perm[%jj + %j1]] % 12;
+	// echo(2 SPC %gi1);
 	%gi2 = %this.perm[%ii + 1 + %this.perm[%jj + 1]] % 12;
+	// echo(3 SPC %gi2);
 
 	%t0 = 0.5 - %x0 * %x0 - %y0 * %y0;
 	if(%t0 < 0)
@@ -103,7 +109,7 @@ function SimplexNoise::noise2d(%this, %x, %y, %seed)
 		%n0 = %t0 * %t0 * simp_dot2d(%this.grad3[%gi0], %x0, %y0);
 	}
 
-	%t1 = 0.5 - %x1 * %x1 - %y0 * %y0;
+	%t1 = 0.5 - %x1 * %x1 - %y1 * %y1;
 	if(%t1 < 0)
 		%n1 = 0;
 	else
@@ -570,8 +576,10 @@ function psVoxTerrainMap::cellHeightmap(%this, %minX, %minY, %minZ, %maxX, %maxY
 				%h = %this.height[%x, %y];
 				if(%z - 1 < %h && %z + 1 > %h)
 					%this.cell[%x, %y, %z] = 1;
-				else
+				else if(%z-1 > %h)
 					%this.cell[%x, %y, %z] = 0;
+				else
+					%this.cell[%x, %y, %z] = -1;
 			}
 		}
 	}
@@ -856,6 +864,7 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 	%maxZ = getWord(%end, 2);
 
 	%i = 0;
+	%b = 0;
 	for(%z = %minZ; %z <= %maxZ; %z++)
 	{
 		for(%y = %minY; %y <= %maxY; %y++)
@@ -863,10 +872,15 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 			for(%x = %minX; %x <= %maxX; %x++)
 			{
 				%c = %map.cell[%x, %y, %z];
-				if(%c)
+				if(%c == 1)
 				{
 					%this.schedule(%i * 50, setBlock, %x, %y, %z, psVoxBlockData_Dirt2x, 1);
 					%i++;
+				}
+				else if(%c == -1)
+				{
+					%this.schedule(%b * 33, setBlock, %x, %y, %z, psVoxBlockData_Empty, 1);
+					%b++;
 				}
 			}
 		}
