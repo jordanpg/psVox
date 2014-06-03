@@ -121,7 +121,7 @@ function SimplexNoise::noise2d(%this, %x, %y, %seed)
 		%n2 = %t2 * %t2 * simp_dot2d(%this.grad3[%gi2], %x2, %y2);
 	}
 
-	return 70 * (%n0 + %n2 + %n3);
+	return 70 * (%n0 + %n1 + %n2);
 }
 
 function SimplexNoise::noise3d(%this, %x, %y, %z, %seed)
@@ -391,13 +391,16 @@ function psVoxTerrain::getHeight(%this, %x, %y, %seed)
 	return %noise;
 }
 
-function psVoxTerrain::getDensity(%this, %x, %y, %z, %seed)
+function psVoxTerrain::getDensity(%this, %x, %y, %z, %seed, %norm, %nof)
 {
-	%noise = %this.noise.noise3d(%x * %this.freq, %y * %this.freq, %z * %this.freq, %seed);
+	%f = (!%nof ? %this.freq : 1);
+	%noise = %this.noise.noise3d(%x * %f, %y * %f, %z * %f, %seed);
+	if(%norm)
+		%noise = (%noise + 1) / 2;
 	return %noise;
 }
 
-function plantBrick(%db, %pos, %client, %colour)
+function simpBrick(%db, %pos, %client, %colour)
 {
 	%brick = new fxDTSBrick()
 			{
@@ -430,7 +433,7 @@ function psVoxTerrain::heightmapTest(%this, %minX, %minY, %maxX, %maxY, %hscale,
 
 			%pos = (%x * 0.5) SPC (%y * 0.5) SPC (%height * 0.2);
 			// echo(%pos);
-			schedule(%i*15, 0, plantBrick, Brick1x1Data, %pos, localClientConnection, %colorID);
+			schedule(%i*15, 0, simpBrick, Brick1x1Data, %pos, localClientConnection, %colorID);
 			%i++;
 		}
 	}
@@ -450,7 +453,7 @@ function psVoxTerrain::test3d(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %
 				%density = %this.getDensity(%x, %y, %z);
 				if(%density > 0)
 				{
-					schedule(%i * 15, 0, plantBrick, Brick1x1FData, (%x * 0.5) SPC (%y * 0.5) SPC ((%z-8) * 0.2), localClientConnection, %colorID);
+					schedule(%i * 15, 0, simpBrick, Brick1x1FData, (%x * 0.5) SPC (%y * 0.5) SPC ((%z-8) * 0.2), localClientConnection, %colorID);
 					%i++;
 				}
 			}
@@ -485,18 +488,18 @@ function psVoxTerrainMap::heightmapTest2(%this, %minX, %minY, %maxX, %maxY, %col
 
 			%pos = (%x * 0.5) SPC (%y * 0.5) SPC (%height * 0.2);
 			// echo(%pos);
-			schedule(%i*15, 0, plantBrick, Brick1x1Data, %pos, localClientConnection, %colorID);
+			schedule(%i*15, 0, simpBrick, Brick1x1Data, %pos, localClientConnection, %colorID);
 			%i++;
 		}
 	}
 }
 
-function psVoxTerrainMap::addDensity(%this, %x, %y, %z, %seed)
+function psVoxTerrainMap::addDensity(%this, %x, %y, %z, %seed, %norm, %nof)
 {
-	%this.cell[%x, %y, %z] = %this.parent.getDensity(%x, %y, %z, %seed);
+	%this.cell[%x, %y, %z] = %this.parent.getDensity(%x, %y, %z, %seed, %norm, %nof);
 }
 
-function psVoxTerrainMap::genCells(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %seed)
+function psVoxTerrainMap::genCells(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %seed, %norm, %nof)
 {
 	for(%z = %minZ; %z <= %maxZ; %z++)
 	{
@@ -504,7 +507,7 @@ function psVoxTerrainMap::genCells(%this, %minX, %minY, %minZ, %maxX, %maxY, %ma
 		{
 			for(%x = %minX; %x <= %maxX; %x++)
 			{
-				%this.addDensity(%x, %y, %z, %seed);
+				%this.addDensity(%x, %y, %z, %seed, %norm, %nof);
 			}
 		}
 	}
@@ -525,7 +528,7 @@ function psVoxTerrainMap::terrainTest(%this, %minX, %minY, %minZ, %maxX, %maxY, 
 						%c = 2;
 					else
 						%c = 8;
-					schedule(%i * 15, 0, plantBrick, Brick4xCubeData, (%x * 2) SPC (%y * 2) SPC (%z * 2), localClientConnection, %c);
+					schedule(%i * 15, 0, simpBrick, Brick4xCubeData, (%x * 2) SPC (%y * 2) SPC (%z * 2), localClientConnection, %c);
 					%i++;
 				}
 			}
@@ -533,10 +536,55 @@ function psVoxTerrainMap::terrainTest(%this, %minX, %minY, %minZ, %maxX, %maxY, 
 	}
 }
 
-function psVoxTerrain::newMap(%this, %name)
+function psVoxTerrainMap::debugCells(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %d0, %d1)
+{
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%density = %this.cell[%x, %y, %z];
+				if(%density > %d0 && %density < %d1)
+				{
+					// if(%z >= %this.height[%x, %y])
+					// 	%c = 2;
+					// else
+					// 	%c = 8;
+					schedule(%i * 15, 0, simpBrick, Brick2xCubeData, (%x * 1) SPC (%y * 1) SPC (%z * 1), localClientConnection, 8);
+					%i++;
+				}
+			}
+		}
+	}
+}
+
+function psVoxTerrainMap::cellHeightmap(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ)
+{
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%h = %this.height[%x, %y];
+				if(%z - 1 < %h && %z + 1 > %h)
+					%this.cell[%x, %y, %z] = 1;
+				else
+					%this.cell[%x, %y, %z] = 0;
+			}
+		}
+	}
+}
+
+function psVoxTerrain::newMap(%this, %name, %keep)
 {
 	if(isObject(%this.map[%name]))
+	{
+		if(%keep)
+			return %this.map[%name];
 		%this.map[%name].delete();
+	}
 
 	%map = new ScriptObject("terrainMap_" @ %name)
 			{
@@ -558,7 +606,7 @@ function psVoxTerrain::terrainTest_0(%this)
 	return 0;
 }
 
-function psVoxTerrain::terrainTest_1(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale)
+function psVoxTerrain::terrainTest_1(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %shift, %map)
 {
 	//phase 1: generate maps
 	%height = %this.map["height"];
@@ -568,11 +616,16 @@ function psVoxTerrain::terrainTest_1(%this, %minX, %minY, %minZ, %maxX, %maxY, %
 	%i = 0;
 	%height.schedule(33, genHeightmap, %minX, %minY, %maxX, %maxY, %scale);
 	%i++;
-	%density0.schedule(66, genCells, %minX, %minY, %minZ, %maxX, %maxY, %maxZ);
+	%density0.schedule(66, genCells, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, "", %map);
 	%i++;
-	%density1.schedule(99, genCells, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %this.seed+32);
+	%density1.schedule(99, genCells, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %this.seed+%shift, %map);
 	%this.noise.schedule(132, setSeed, %this.seed);
 	%i++;
+	if(%map)
+	{
+		%height.schedule(132, cellHeightmap, %minX, %minY, %minZ, %maxX, %maxY, %maxZ);
+		%i++;
+	}
 	return %i;
 }
 
@@ -617,6 +670,49 @@ function psVoxTerrain::terrainTest_2(%this, %minX, %minY, %minZ, %maxX, %maxY, %
 	return %i;
 }
 
+function psVoxTerrain::terrainTest_2_1(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %cp0, %cp1)
+{
+	//phase 2: solve scape
+	%height = %this.map["height"];
+	%density0 = %this.map["density0"];
+	%density1 = %this.map["density1"];
+	%land = %this.map["scape"];
+
+	echo(isObject(%height));
+
+	// echo($bloog);
+	%i = 0;
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%land.cell[%x, %y, %z] = 1;
+				%h = %height.height[%x, %y];
+				if(%z-1 > %h)
+				{
+					// echo("skip" SPC %x SPC %y SPC %z SPC %height);
+					%land.cell[%x, %y, %z] = 0;
+					continue;
+				}
+
+				%d0 = mAbs(%density0.cell[%x, %y, %z]);
+				%d1 = mAbs(%density1.cell[%x, %y, %z]);
+				if(%d0 > %cp0 && %d0 < %cp1 && %d1 > %cp0 && %d1 < %cp1)
+				{
+					// echo(%x SPC %y SPC %z);
+					%land.cell[%x, %y, %z] = 0;
+				}
+
+				// else if(%d0 > %cp1 && %d1 > %cp1)
+				// 	%land.cell[%x, %y, %z] = 0;
+			}
+		}
+	}
+	return %i;
+}
+
 function psVoxTerrain::terrainTest_3(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ)
 {
 	//phase 3: build
@@ -637,7 +733,7 @@ function psVoxTerrain::terrainTest_3(%this, %minX, %minY, %minZ, %maxX, %maxY, %
 						%c = 2;
 					else
 						%c = 8;
-					schedule(%i * 15, 0, plantBrick, Brick4xCubeData, (%x * 2) SPC (%y * 2) SPC (%z * 2), localClientConnection, %c);
+					schedule(%i * 15, 0, simpBrick, Brick2xCubeData, (%x * 1) SPC (%y * 1) SPC (%z * 1), localClientConnection, %c);
 					%i++;
 				}
 			}
@@ -646,12 +742,12 @@ function psVoxTerrain::terrainTest_3(%this, %minX, %minY, %minZ, %maxX, %maxY, %
 	return %i;
 }
 
-function psVoxTerrain::terrainTest(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %cp0, %cp1)
+function psVoxTerrain::terrainTest(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %cp0, %cp1, %shift)
 {
-	%i += %this.terrainTest_0();
+	%i = %this.terrainTest_0();
 	%i++;
 
-	%i += %this.schedule(150, terrainTest_1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale);
+	%i += %this.schedule(150, terrainTest_1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %shift);
 	%i++;
 
 	%i += %this.schedule(300, terrainTest_2, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %cp0, %cp1);
@@ -659,4 +755,136 @@ function psVoxTerrain::terrainTest(%this, %minX, %minY, %minZ, %maxX, %maxY, %ma
 
 	%i += %this.schedule(450, terrainTest_3, %minX, %minY, %minZ, %maxX, %maxY, %maxZ);
 	echo("Finished terrain test in" SPC %i SPC "actions.");
+}
+
+function psVoxTerrain::terrainTestAlt(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %cp0, %cp1, %shift)
+{
+	%i = %this.terrainTest_0();
+	%i++;
+
+	%i += %this.schedule(150, terrainTest_1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %scale, %shift, 1);
+	%i++;
+
+	%i += %this.schedule(300, terrainTest_2_1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %cp0, %cp1);
+	%i++;
+
+	%i += %this.schedule(450, terrainTest_3, %minX, %minY, %minZ, %maxX, %maxY, %maxZ);
+	echo("Finished terrain test in" SPC %i SPC "actions.");
+}
+
+function psVoxGen_SimpChunk(%this, %cX, %cY, %cZ, %scale)
+{
+	%simp = %this.terrain;
+	if(!isObject(%simp))
+		return;
+
+	%chunk = %this.getSubChunk(%cX, %cY, %cZ);
+	if(!isObject(%chunk))
+		return;
+
+	%gen = %this.genQueue;
+	if(!isObject(%gen))
+	{
+		echo("wat");
+		return;
+	}
+
+	if(%scale <= 0)
+		%scale = 0.02;
+
+	%simp.newMap("scape", 1);
+
+	%gen.addJobToBack(psVoxGen_SimpChunk_1, %this, %chunk, %scale);
+}
+
+function psVoxGen_SimpChunk_1(%this, %chunk, %scale)
+{
+	%simp = %this.terrain;
+	if(!isObject(%simp))
+		return;
+
+	if(!isObject(%chunk))
+		return;
+
+	%map = %simp.mapscape;
+	if(!isObject(%map))
+		return;
+
+	%start = %chunk.getGlobalPos("0 0 0");
+	%size = %this.chunkSize - 1;
+	%end = %chunk.getGlobalPos(%size SPC %size SPC %size);
+	%minX = getWord(%start, 0);
+	%minY = getWord(%start, 1);
+	%maxX = getWord(%end, 0);
+	%maxY = getWord(%end, 1);
+
+	%map.genHeightmap(%minX, %minY, %maxX, %maxY, %scale);
+
+	%this.genQueue.addJobToBack(psVoxGen_SimpChunk_2, %this, %chunk, %map, %start, %end);
+}
+
+function psVoxGen_SimpChunk_2(%this, %chunk, %map, %start, %end)
+{
+	if(!isObject(%map))
+		return;
+
+	%minX = getWord(%start, 0);
+	%minY = getWord(%start, 1);
+	%minZ = getWord(%start, 2);
+	%maxX = getWord(%end, 0);
+	%maxY = getWord(%end, 1);
+	%maxZ = getWord(%end, 2);
+
+	%map.cellHeightmap(%minX, %minY, %minZ, %maxX, %maxY, %maxZ);
+
+	%this.genQueue.addJobToBack(psVoxGen_SimpChunk_3, %this, %chunk, %map, %start, %end);
+}
+
+function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
+{
+	if(!isObject(%map))
+		return;
+
+	if(!isObject(%chunk))
+		return;
+
+	%minX = getWord(%start, 0);
+	%minY = getWord(%start, 1);
+	%minZ = getWord(%start, 2);
+	%maxX = getWord(%end, 0);
+	%maxY = getWord(%end, 1);
+	%maxZ = getWord(%end, 2);
+
+	%i = 0;
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%c = %map.cell[%x, %y, %z];
+				if(%c)
+				{
+					%this.schedule(%i * 50, setBlock, %x, %y, %z, psVoxBlockData_Dirt2x, 1);
+					%i++;
+				}
+			}
+		}
+	}
+}
+
+function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %seed, %freq, %iter, %persist, %low, %high, %addheight)
+{
+	if(!isObject(%this.terrain))
+		%this.initSimplex(%seed, %freq, %iter, %persist, %low, %high, %addheight);
+	if(!isObject(%this.genQueue))
+		%this.initGen();
+	%simp = %this.terrain;
+	%gen = %this.genQueue;
+
+	%chunk = %this.getSubChunk(%cX, %cY, %cZ);
+	if(!isObject(%chunk))
+		%gen.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
+
+	%gen.addJobToBack(psVoxGen_SimpChunk, %this, %cX, %cY, %cZ, %scale);
 }

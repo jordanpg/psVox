@@ -1,0 +1,3 @@
+Title: psVox
+Author: ottosparks
+pseudo-voxel system

@@ -1,22 +1,20 @@
-function psVox_New(%brickGroup)
+$PsVox::BlockPlantRetry = 150;
+
+function psVox_New(%brickGroup, %cell, %chunk)
 {
 	if(isObject(PsVox))
 		return PsVox;
 	if(!isObject(%brickGroup) || %brickGroup.getClassName() !$= "SimGroup")
 		%brickGroup = BrickGroup_888888;
+	%chunk = mFloor(%chunk);
 	$PSVOX = new ScriptGroup(PsVox)
 			{
 				blockGroup = psVoxBlockGroup_New();
 				brickGroup = %brickGroup;
 				updater = psVoxUpdater_New();
 
-				chunkSize = 16;
-				cellSize = 2;
-
-				xMin = 0;
-				xMax = 0;
-				yMin = 0;
-				yMax = 0;
+				chunkSize = (%chunk > 0 ? %chunk : 16);
+				cellSize = (%cell >= 0.5 ? %cell : 2);
 			};
 	return $PSVOX;
 }
@@ -191,13 +189,13 @@ function psVox::createChunk(%this, %cX, %cY, %preload)
 		}
 	}
 
-	if(%cX < %this.xMin)
+	if(%cX < %this.xMin || %this.xMin $= "")
 		%this.xMin = %cX;
-	else if(%cX > %this.xMax)
+	else if(%cX > %this.xMax || %this.xMax $= "")
 		%this.xMax = %cX;
-	if(%cY < %this.yMin)
+	if(%cY < %this.yMin || %this.yMin $= "")
 		%this.yMin = %cY;
-	else if(%cY > %this.yMax)
+	else if(%cY > %this.yMax || %this.yMax $= "")
 		%this.yMax = %cY;
 
 	return %c;
@@ -605,7 +603,7 @@ function psVoxBlock::plant(%this)
 	{
 		if(!%bo.outputReady)
 		{
-			%this.retry = %this.schedule(250, plant);
+			%this.retry = %this.schedule($PsVox::BlockPlantRetry, plant);
 			return;
 		}
 		%bo.setOutput("BASICPHYS");

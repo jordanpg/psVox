@@ -67,7 +67,10 @@ function psVoxGenQueue::addJobToFront(%this, %func, %a0, %a1, %a2, %a3, %a4, %a5
 
 	%this.jobFunc0 = %func;
 	for(%i = 0; %i < 16; %i++)
+	{
 		%this.jobArg0_[%i] = %a[%i];
+		// echo(%i SPC %a[%i]);
+	}
 
 	%this.jobs++;
 	return true;
@@ -95,19 +98,25 @@ function psVoxGen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, 
 {
 	%this.genQueue.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
 
-	%cX++;
+	echo(%cX);
+	%cX += 1;
+	echo(%cX);
 	if(%cX > %endX)
 	{
+		echo("return x" SPC %cX SPC %endX);
 		%cX = %startX;
-		%cY++;
+		%cY += 1;
 	}
 	if(%cY > %endY)
 	{
 		%cY = %startY;
-		%cZ++;
+		%cZ += 1;
 	}
 	if(%cZ <= %endZ)
-		%this.genQueue.addJobToFront(psVoxGen_Chunks, %this, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ);
+	{
+		echo("recurse" SPC %startX SPC %startY SPC %startZ SPC %endX SPC %endY SPC %endZ SPC %cX SPC %cY SPC %cZ);
+		%this.genQueue.addJobToBack(psVoxGen_Chunks, %this, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ);
+	}
 }
 
 function psVox::Gen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ)
@@ -143,5 +152,8 @@ function psVox::Gen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ
 		%endZ = %s;
 		%startZ = %e;
 	}
+	%cX = %startX;
+	%cY = %startY;
+	%cZ = %startZ;
 	%this.genQueue.addJobToBack(psVoxGen_Chunks, %this, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ);
 }
