@@ -783,7 +783,70 @@ function psVoxTerrain::terrainTestAlt(%this, %minX, %minY, %minZ, %maxX, %maxY, 
 	echo("Finished terrain test in" SPC %i SPC "actions.");
 }
 
-function psVoxGen_SimpChunk(%this, %cX, %cY, %cZ, %scale, %grass)
+function psVoxTerrainMap::cellCaves(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %de0, %de1, %cp0, %cp1)
+{
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%c = %this.cell[%x, %y, %z];
+				if(%c == 0)
+					continue;
+
+				%c0 = mAbs(%de0.cell[%x, %y, %z]);
+				%c1 = mAbs(%de1.cell[%x, %y, %z]);
+				if(!(%c0 > %cp0 && %c0 < %cp1 && %c1 > %cp0 && %c1 < %cp1))
+					continue;
+
+				%d0 = %x SPC %y SPC %z+1;
+				%d1 = %x SPC %y SPC %z-1;
+				%d2 = %x-1 SPC %y SPC %z;
+				%d3 = %x+1 SPC %y SPC %z;
+				%d4 = %x SPC %y-1 SPC %z;
+				%d5 = %x SPC %y+1 SPC %z;
+				for(%i = 0; %i < 6; %i++)
+				{
+					%d = %d[%i];
+					%n = strReplace(%d, " ", "_");
+					%s = %this.cell[%n];
+					if(%s == -1)
+						%this.cell[%n] = 1;
+				}
+				%this.cell[%x, %y, %z] = 0;
+			}
+		}
+	}
+}
+
+function psVoxTerrainMap::cellDebug(%this, %minX, %minY, %minZ, %maxX, %maxY, %maxZ)
+{
+	%i = 0;
+	%b = 0;
+	for(%z = %minZ; %z <= %maxZ; %z++)
+	{
+		for(%y = %minY; %y <= %maxY; %y++)
+		{
+			for(%x = %minX; %x <= %maxX; %x++)
+			{
+				%c = %this.cell[%x, %y, %z];
+				if(%c == 1)
+					%col = 8;
+				else if(%c == 2)
+					%col = 2;
+				else if(%c == -1)
+					%col = 17;
+				else
+					continue;
+				schedule(%i * 15, 0, simpBrick, Brick2xCubeData, (%x * 1) SPC (%y * 1) SPC (%z * 1), localClientConnection, %col);
+				%i++;
+			}
+		}
+	}
+}
+
+function psVoxGen_SimpChunk(%this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift)
 {
 	%simp = %this.terrain;
 	if(!isObject(%simp))
@@ -804,11 +867,16 @@ function psVoxGen_SimpChunk(%this, %cX, %cY, %cZ, %scale, %grass)
 		%scale = 0.02;
 
 	%simp.newMap("scape", 1);
+	if(%caves)
+	{
+		%simp.newMap("density0", 1);
+		%simp.newMap("density1", 1);
+	}
 
-	%gen.addJobToBack(psVoxGen_SimpChunk_1, %this, %chunk, %scale, %grass);
+	%gen.addJobToBack(psVoxGen_SimpChunk_1, %this, %chunk, %scale, %grass, %caves, %cp0, %cp1, %shift);
 }
 
-function psVoxGen_SimpChunk_1(%this, %chunk, %scale, %grass)
+function psVoxGen_SimpChunk_1(%this, %chunk, %scale, %grass, %caves, %cp0, %cp1, %shift)
 {
 	%simp = %this.terrain;
 	if(!isObject(%simp))
@@ -831,10 +899,31 @@ function psVoxGen_SimpChunk_1(%this, %chunk, %scale, %grass)
 
 	%map.genHeightmap(%minX, %minY, %maxX, %maxY, %scale);
 
-	%this.genQueue.addJobToBack(psVoxGen_SimpChunk_2, %this, %chunk, %map, %start, %end, %grass);
+	if(%caves)
+		%this.genQueue.addJobToBack(psVoxGen_SimpChunk_1_1, %this, %start, %end, %simp.mapdensity0, %simp.mapdensity1, %shift);
+
+	%this.genQueue.addJobToBack(psVoxGen_SimpChunk_2, %this, %chunk, %map, %start, %end, %grass, %caves, %cp0, %cp1);
 }
 
-function psVoxGen_SimpChunk_2(%this, %chunk, %map, %start, %end, %grass)
+function psVoxGen_SimpChunk_1_1(%this, %start, %end, %d0, %d1, %shift)
+{
+	if(!isObject(%d0) || !isObject(%d1))
+		return;
+	echo("cavegen");
+
+	%minX = getWord(%start, 0);
+	%minY = getWord(%start, 1);
+	%minZ = getWord(%start, 2);
+	%maxX = getWord(%end, 0);
+	%maxY = getWord(%end, 1);
+	%maxZ = getWord(%end, 2);
+
+	%d0.genCells(%minX, %minY, %minZ, %maxX, %maxY, %maxZ, "");
+	%d1.genCells(%minX, %minY, %minZ, %maxX, %maxY, %maxZ, %d1.parent.seed + %shift);
+	%d1.parent.noise.setSeed(%d1.parent.seed);
+}
+
+function psVoxGen_SimpChunk_2(%this, %chunk, %map, %start, %end, %grass, %caves, %cp0, %cp1)
 {
 	if(!isObject(%map))
 		return;
@@ -848,7 +937,28 @@ function psVoxGen_SimpChunk_2(%this, %chunk, %map, %start, %end, %grass)
 
 	%map.cellHeightmap(%minX, %minY, %minZ, %maxX, %maxY, %maxZ, %grass);
 
+	// echo(%caves);
+	if(%caves)
+		%this.genQueue.addJobToBack(psVoxGen_SimpChunk_2_1, %this, %map, %start, %end, %this.terrain.mapdensity0, %this.terrain.mapdensity1, %cp0, %cp1);
+
 	%this.genQueue.addJobToBack(psVoxGen_SimpChunk_3, %this, %chunk, %map, %start, %end);
+}
+
+function psVoxGen_SimpChunk_2_1(%this, %map, %start, %end, %d0, %d1, %cp0, %cp1)
+{
+	// echo("check" SPC isObject(%map) SPC isObject(%d0) SPC isObject(%d1));
+	if(!isObject(%map) || !isObject(%d0) || !isObject(%d1))
+		return;
+
+	// echo("cellcaves");
+	%minX = getWord(%start, 0);
+	%minY = getWord(%start, 1);
+	%minZ = getWord(%start, 2);
+	%maxX = getWord(%end, 0);
+	%maxY = getWord(%end, 1);
+	%maxZ = getWord(%end, 2);
+
+	%map.cellCaves(%minX, %minY, %minZ, %maxX, %maxY, %maxZ, %d0, %d1, %cp0, %cp1);
 }
 
 function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
@@ -895,7 +1005,7 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 	}
 }
 
-function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %addheight, %seed, %freq, %iter, %persist, %low, %high)
+function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift, %addheight, %seed, %freq, %iter, %persist, %low, %high)
 {
 	if(!isObject(%this.terrain))
 		%this.initSimplex(%seed, %freq, %iter, %persist, %low, %high, %addheight);
@@ -908,5 +1018,5 @@ function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %addheight, %s
 	if(!isObject(%chunk))
 		%gen.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
 
-	%gen.addJobToBack(psVoxGen_SimpChunk, %this, %cX, %cY, %cZ, %scale, %grass);
+	%gen.addJobToBack(psVoxGen_SimpChunk, %this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift);
 }
