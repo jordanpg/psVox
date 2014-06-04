@@ -781,7 +781,11 @@ function __blastOff_OutputBASICPHYS_Tick(%this, %outk, %data)
 
 	__blastOff_OutputBASICPHYS_Next(%this, %outk, %data);
 
-	%this.outputTick = schedule(%outk.getParameter("loadSpeed"), 0, __blastOff_outputBASICPHYS_Tick, %this, %outk, %data);
+	%speed = %outk.getParameter("loadSpeed");
+	if(%speed >= 0)
+		%this.outputTick = schedule(%outk.getParameter("loadSpeed"), 0, __blastOff_outputBASICPHYS_Tick, %this, %outk, %data);
+	else
+		__blastOff_outputBASICPHYS_Tick(%this, %outk, %data);
 }
 
 function __blastOff_OutputBASICPHYS_Complete(%this, %outk)
@@ -795,6 +799,9 @@ function __blastOff_OutputBASICPHYS_Complete(%this, %outk)
 	if(%this.echo)
 		echo("blastOff :" SPC %this.getName() SPC "has finished basic physical output.");
 	%this.currAction = "";
+
+	if(%this.selfdestruct)
+		%this.delete();
 }
 
 function __blastOff_OutputBASICPHYS_Next(%this, %outk, %data)
@@ -894,11 +901,13 @@ function __blastOff_OutputBASICPHYS_Next(%this, %outk, %data)
 	if(!%brick.getParameter("Rendering"))
 		%br.setRendering(false);
 
-	if(%brick.hasParameter("name"))
-		%br.setNTObjectName(%brick.getParameter("name"));
-	if(%brick.hasParameter("emitterName"))
+	%n = %brick.getParameter("name");
+	if(%n !$= "")
+		%br.setNTObjectName(%n);
+	%emit = %brick.getParameter("emitterName");
+	if(%emit !$= "")
 	{
-		%ui = %brick.getParameter("emitterName");
+		%ui = %emit;
 		%direction = %brick.getParameter("emitterDir");
 		if(%direction - 2 >= 0)
 			%direction += %loadRot;
@@ -910,16 +919,18 @@ function __blastOff_OutputBASICPHYS_Next(%this, %outk, %data)
 		if(isObject(%emitterdb))
 			%br.setEmitter(%emitterdb);
 	}
-	if(%brick.hasParameter("light"))
+	%light = %brick.getParameter("light");
+	if(%light !$= "")
 	{
-		%ui = %brick.getParameter("light");
+		%ui = %light;
 		%lightdb = $UINameTable_Lights[%ui];
 		if(isObject(%lightdb))
 			%br.setLight(%lightdb);
 	}
-	if(%brick.hasParameter("itemName"))
+	%item = %brick.getParameter("itemName");
+	if(%item !$= "")
 	{
-		%ui = %brick.getParameter("itemName");
+		%ui = %item;
 		%pos = %brick.getParameter("itemPos");
 		%dir = %brick.getParameter("itemDir");
 		%resp = %brick.getParameter("itemRespawnTime");
@@ -930,9 +941,10 @@ function __blastOff_OutputBASICPHYS_Next(%this, %outk, %data)
 		if(isObject(%itemdb))
 			%br.setItem(%itemdb);
 	}
-	if(%brick.hasParameter("music"))
+	%music = %brick.getParameter("music");
+	if(%music !$= "")
 	{
-		%ui = %brick.getParameter("music");
+		%ui = %music;
 		%musicdb = $UINameTable_Music[%ui];
 		if(isObject(%musicdb))
 			%br.setMusic(%musicdb);

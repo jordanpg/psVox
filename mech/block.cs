@@ -1,6 +1,3 @@
-$PsVox::UpdateTick = 100;
-$PsVox::UpdateReach = 1;
-
 function psVoxBlockData::onBreak(%this, %obj, %player)
 {
 	//pass

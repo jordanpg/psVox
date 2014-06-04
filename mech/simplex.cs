@@ -573,12 +573,11 @@ function psVoxTerrainMap::cellHeightmap(%this, %minX, %minY, %minZ, %maxX, %maxY
 		{
 			for(%x = %minX; %x <= %maxX; %x++)
 			{
+				%this.cell[%x, %y, %z] = 0;
 				%h = %this.height[%x, %y];
 				if(%z - 1 < %h && %z + 1 > %h)
 					%this.cell[%x, %y, %z] = 1;
-				else if(%z-1 > %h)
-					%this.cell[%x, %y, %z] = 0;
-				else
+				else if(%z - 1 < %h)
 					%this.cell[%x, %y, %z] = -1;
 			}
 		}
@@ -874,12 +873,12 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 				%c = %map.cell[%x, %y, %z];
 				if(%c == 1)
 				{
-					%this.schedule(%i * 50, setBlock, %x, %y, %z, psVoxBlockData_Dirt2x, 1);
+					%this.schedule(mFloor(%i / 10) * 50, setBlock, %x, %y, %z, psVoxBlockData_Dirt2x, 1);
 					%i++;
 				}
 				else if(%c == -1)
 				{
-					%this.schedule(%b * 33, setBlock, %x, %y, %z, psVoxBlockData_Empty, 1);
+					%this.schedule(mFloor(%b / 25) * 33, setBlock, %x, %y, %z, psVoxBlockData_Empty, 1);
 					%b++;
 				}
 			}

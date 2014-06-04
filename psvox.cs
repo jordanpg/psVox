@@ -12,6 +12,7 @@ function psVox_New(%brickGroup, %cell, %chunk)
 				blockGroup = psVoxBlockGroup_New();
 				brickGroup = %brickGroup;
 				updater = psVoxUpdater_New();
+				builder = psVoxBuilder_New();
 
 				chunkSize = (%chunk > 0 ? %chunk : 16);
 				cellSize = (%cell >= 0.5 ? %cell : 2);
@@ -576,12 +577,32 @@ function psVoxBlock::transistion(%this)
 
 function psVoxBlock::plant(%this)
 {
-	// echo(p);
 	if(isEventPending(%this.retry))
 		cancel(%this.retry);
+
+	if(%this.type.shapeType $= "Empty" || !isObject(%this.type.shape))
+		return false;
+
+	if(isObject(%this.psVox.builder))
+		return %this.psVox.builder.addBlock(%this);
+	else
+		%r = %this._plant();
+
+	if(%r == -1)
+		%this.retry = %this.schedule($PsVox::BlockPlantRetry, plant);
+}
+
+function psVoxBlock::_plant(%this)
+{
+	// echo(p);
 	%type = %this.type;
 	if(%type.shapeType $= "Empty")
-		return;
+		return false;
+	%bo = %type.shape;
+	if(!isObject(%bo))
+		return false;
+	if(!%bo.outputReady && !isObject(%this.psVox.builder))
+		return -1;
 
 	%cell = %this.psVox.cellSize;
 	%hCell = %cell / 2;
@@ -598,16 +619,11 @@ function psVoxBlock::plant(%this)
 	%zMax = %rZ + (!%type.posFromBottom ? %hCell : %cell);
 	%box = %xMin SPC %yMin SPC %zMin SPC %xMax SPC %yMax SPC %zMax;
 
-	%bo = %type.shape;
 	if(isObject(%bo))
 	{
-		if(!%bo.outputReady)
-		{
-			%this.retry = %this.schedule($PsVox::BlockPlantRetry, plant);
-			return;
-		}
 		%bo.setOutput("BASICPHYS");
-		%bo.output(%rPos, %this.rotation, 1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %box, %this);
+		%bo.output(%rPos, %this.rotation, -1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %box, %this);
+		return true;
 	}
 }
 

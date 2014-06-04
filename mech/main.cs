@@ -1,3 +1,4 @@
+exec("./builder.cs");
 exec("./block.cs");
 exec("./update.cs");
 exec("./stats.cs");

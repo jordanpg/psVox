@@ -301,3 +301,29 @@ function trenchMap::debug(%this, %origin)
 		}
 	}
 }
+
+function psVoxBlockData_Trench::onBreak(%this, %obj, %player)
+{
+	%d0 = %obj.getRelative("0 0 1");
+	%d1 = %obj.getRelative("0 0 -1");
+	%d2 = %obj.getRelative("-1 0 0");
+	%d3 = %obj.getRelative("1 0 0");
+	%d4 = %obj.getRelative("0 -1 0");
+	%d5 = %obj.getRelative("0 1 0");
+	for(%i = 0; %i < 6; %i++)
+	{
+		%o = %d[%i];
+		if(!isObject(%o))
+			continue;
+
+		if(%o.type.getID() == psVoxBlockData_Empty.getID())
+		{
+			// echo(%o.type.name);
+			// echo(%o.type);
+			// echo(psVoxBlockData_Empty);
+			%o.setType(psVoxBlockData_Dirt2x, 1);
+		}
+	}
+
+	parent::onBreak(%this, %obj, %player);
+}

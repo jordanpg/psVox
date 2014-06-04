@@ -6,6 +6,8 @@ function psVox::initGen(%this)
 		return %this.genQueue;
 
 	%this.genQueue = new ScriptObject(psVoxGenQueue){psVox = %this; jobs = 0;};
+	%this.genQueue.tick();
+	
 	return %this.genQueue;
 }
 
