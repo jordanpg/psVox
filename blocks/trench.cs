@@ -12,7 +12,7 @@ if(!isObject(psVoxBlockData_Dirt2x))
 		name = "Trench Dirt";
 
 		shapeType = "Block";
-		shape = blastOff_NewPreload("BDDirt", "STRING", "2x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1");
+		shape = blastOff_NewPreload("BDDirt2x", "STRING", "2x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1");
 		solid = true;
 		opaque = true;
 		trigger = false;
@@ -25,6 +25,33 @@ if(!isObject(psVoxBlockData_Dirt2x))
 		stable = true;
 
 		breakSpeed = 5;
+		weight = 1;
+		support = -1;
+	};
+}
+
+if(!isObject(psVoxBlockData_Grass2x))
+{
+	new ScriptObject(psVoxBlockData_Grass2x)
+	{
+		class = "psVoxBlockData_Trench";
+		superClass = "psVoxBlockData";
+		name = "Trench Grass";
+
+		shapeType = "Block";
+		shape = blastOff_NewPreload("BDGrass2x", "STRING", "2x Cube -1f\" 0 0 0.0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1" NL "2x2F\" 0 0 0.4 0 1" SPC getClosestPaintColor("0 0.5 0 1") SPC "0 0 0 1 1 1");
+		solid = true;
+		opaque = true;
+		trigger = false;
+		touch = false;
+		posFromBottom = false;
+		rotates = false;
+		activated = false;
+		carryProps = false;
+		gravity = false;
+		stable = true;
+
+		breakSpeed = 7;
 		weight = 1;
 		support = -1;
 	};

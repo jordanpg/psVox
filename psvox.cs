@@ -17,6 +17,7 @@ function psVox_New(%brickGroup, %cell, %chunk)
 				chunkSize = (%chunk > 0 ? %chunk : 16);
 				cellSize = (%cell >= 0.5 ? %cell : 2);
 			};
+	PsVox.initGen();
 	return $PSVOX;
 }
 

@@ -6,6 +6,12 @@ datablock fxDTSBrickData(Brick2xCubeData : Brick4xCubeData)
 	uiName = "2x Cube";
 };
 
+datablock fxDTSBrickData(Brick2xCubeM1Data : Brick2xCubeData)
+{
+	brickFile = "./2xCubem1.blb";
+	uiName = "2x Cube -1f";
+};
+
 datablock itemData(voxelWrenchItem : wrenchItem)
 {
 	category = "Weapon";

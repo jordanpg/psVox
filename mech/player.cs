@@ -121,10 +121,9 @@ function Player::blockBreak(%this, %bl)
 
 	if(!%this.client.voxBuild)
 		return;
-
 	%look = getField(%this.getBlockLook(), 0);
-	if(isObject(%bl) && %this.getMountedImage(0) != nameToId(voxelWrenchImage))
-	{	
+	if(isObject(%bl) && !isObject(%this.getMountedImage(0)))
+	{
 		if(%look.getID() != %bl.getID())
 		{
 			%this.breakProg = 0;
@@ -151,6 +150,7 @@ function Player::blockBreak(%this, %bl)
 			// echo(%r);
 			%this.breakProg = 0;
 			%bl = -1;
+			%this.playThread(3, activate2);
 		}
 	}
 	else
@@ -206,13 +206,15 @@ package voxBuild
 					return %r;
 				ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bl.pos));
 				%bln = %bl.setType(%type);
+				%obj.playThread(3, activate);
 			}
 			else
 			{
 				if(!isObject(groundPlane))
 					return %r;
-				%ray = %obj.eyeCast(8, groundPlane.getType());
-				if(!isObject(firstWord(%ray)))
+				%ray = %obj.eyeCast(8, groundPlane.getType() | $TypeMasks::FxBrickAlwaysObjectType);
+				%h = firstWord(%ray);
+				if(!isObject(%h) || %h.getName() !$= "groundPlane")
 					return %r;
 				// echo(%ray);
 				%hitpos = getWords(%ray, 1, 3);
@@ -223,6 +225,7 @@ package voxBuild
 				%vZ = getWord(%vpos, 2);
 				%bln = PsVox.setBlock(%vX, %vY, %vZ, %type);
 				ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bln.pos));
+				%obj.playThread(3, activate);
 			}
 			// if(isObject(%bln))
 			// 	ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bln.pos));
@@ -234,6 +237,7 @@ package voxBuild
 			{
 				%obj.breakProg = 0;
 				%obj.blockBreak(%bl);
+				%obj.playThread(3, activate2);
 			}
 		}
 		else if(%slot $= 0 && !%val)
@@ -241,6 +245,7 @@ package voxBuild
 			if(isEventPending(%obj.blockBreak))
 				cancel(%obj.blockBreak);
 			%obj.breakProg = 0;
+			%obj.playThread(3, root);
 		}
 		return %r;
 	}

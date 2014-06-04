@@ -39,6 +39,9 @@ function psVoxGenQueue::doFront(%this)
 	}
 	%this.jobs--;
 
+	if(%this.jobs == 0)
+		%this.onQueueFinished();
+
 	return %r;
 }
 
@@ -86,9 +89,13 @@ function psVoxGenQueue::tick(%this)
 	if(%this.jobs > 0)
 		%this.doFront();
 
-	%this.tick = %this.schedule($PsVox::GenTime, tick);
+	$PsVox::GenTick = %this.tick = %this.schedule($PsVox::GenTime, tick);
 }
 
+function psVoxGenQueue::onQueueFinished(%this)
+{
+	//pass
+}
 
 
 function psVoxGen_Chunk(%this, %x, %y, %z)
@@ -100,12 +107,12 @@ function psVoxGen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, 
 {
 	%this.genQueue.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
 
-	echo(%cX);
+	// echo(%cX);
 	%cX += 1;
-	echo(%cX);
+	// echo(%cX);
 	if(%cX > %endX)
 	{
-		echo("return x" SPC %cX SPC %endX);
+		// echo("return x" SPC %cX SPC %endX);
 		%cX = %startX;
 		%cY += 1;
 	}
@@ -116,7 +123,7 @@ function psVoxGen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, 
 	}
 	if(%cZ <= %endZ)
 	{
-		echo("recurse" SPC %startX SPC %startY SPC %startZ SPC %endX SPC %endY SPC %endZ SPC %cX SPC %cY SPC %cZ);
+		// echo("recurse" SPC %startX SPC %startY SPC %startZ SPC %endX SPC %endY SPC %endZ SPC %cX SPC %cY SPC %cZ);
 		%this.genQueue.addJobToBack(psVoxGen_Chunks, %this, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ);
 	}
 }

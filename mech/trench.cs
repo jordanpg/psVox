@@ -1,3 +1,5 @@
+$PsVox::TrenchHeight = 4;
+
 function genTrenchMap(%gridSize, %dist, %bperc, %brand)
 {
 	if(%bperc > 1)
@@ -273,6 +275,7 @@ function genTrenchMap(%gridSize, %dist, %bperc, %brand)
 			return %map;
 		}
 	}
+	%map.done = true;
 	return %map;
 }
 
@@ -326,4 +329,83 @@ function psVoxBlockData_Trench::onBreak(%this, %obj, %player)
 	}
 
 	parent::onBreak(%this, %obj, %player);
+}
+
+function psVoxBlockData_Trench::onBlockSet(%this, %obj, %overrideKeep, %noupdate)
+{
+	%below = %obj.getRelative("0 0 -1");
+	if(isObject(%below) && %below.type.getID() == psVoxBlockData_Grass2x.getID())
+		%below.setType(psVoxBlockData_Dirt2x, 1);
+	parent::onBlockSet(%this, %obj, %overrideKeep, %noupdate);
+}
+
+// function psVoxGenQueue::onQueueFinished(%this)
+// {
+// 	switch($psVoxTrench_Phase)
+// 	{
+// 		case 1: %this.addJobToBack(psVoxGen_Trench_1, %this.psVox, %size, %map, %scales, %grass, 0, 0, 0);
+// 	}
+// }
+
+function psVoxGen_Trench(%this, %size, %bperc, %brand, %scales, %grass)
+{
+	%map = genTrenchMap(%size, 0, %bperc, %brand);
+	if(!%map.done)
+	{
+		%map.delete();
+		return;
+	}
+	// %minX = 0;
+	// %minY = 0;
+	// %maxX = getWord(%size, 0);
+	// %maxY = getWord(%size, 1);
+	// %this.Gen_Chunks(%minX, %minY, 0, %maxX, %maxY, $PsVox::TrenchHeight);
+	$psVoxTrench_Phase = 1;
+
+	%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this.psVox, %size, %map, %scales, %grass, 0, 0, 0);
+}
+
+function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ)
+{
+	%minX = 0;
+	%minY = 0;
+	%maxX = getWord(%size, 0);
+	%maxY = getWord(%size, 1);
+
+	%c = %map.map[%cX, %cY];
+
+	if(%c != 0)
+		%this.Gen_Simplex(%cX, %cY, %cZ, %scales, %grass);
+
+	%cX++;
+	if(%cX > %maxX)
+	{
+		%cX = 0;
+		%cY++;
+	}
+	if(%cY > %maxY)
+	{
+		%cY = 0;
+		%cZ++;
+	}
+	if(%cZ <= $PsVox::TrenchHeight)
+	{
+		%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this, %size, %map, %scales, %grass, %cX, %cY, %cZ);
+	}
+	else
+		$psVoxTrench_Phase = 2;
+}
+
+// function psVoxGen_Trench_2(%this)
+
+function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %addheight, %seed, %freq, %iter, %persist, %low, %high)
+{
+	if(!isObject(%this.genQueue))
+		%this.initGen();
+
+	if(!isObject(%this.terrain))
+		%this.initSimplex(%seed, %freq, %iter, %persist, %low, %high, %addheight);
+
+	$psVoxGen_Phase = 0;
+	%this.genQueue.addJobToBack(psVoxGen_Trench, %this, %size, %bperc, %brand, %scales, %grass);
 }
