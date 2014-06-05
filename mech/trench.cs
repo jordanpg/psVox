@@ -1,10 +1,11 @@
 $PsVox::TrenchHeight = 4;
 $PsVox::TrenchDlgSpeed = 500;
-$PsVox::TrenchPlantSpeed = 275;
+$PsVox::TrenchPlantSpeed = 300;
 $PsVox::TrenchBreakEfficiency = 1;
 $PsVox::TrenchPlaceRequirement = 1;
-$PsVox::TrenchPlaceType = psVoBlockData_Dirt2x;
-$PsVox::TrenchDirtUnit = "cm³";
+$PsVox::TrenchPlaceType = psVoxBlockData_Dirt2x;
+$PsVox::TrenchDirtUnit = "cm^3";
+$PsVox::TrenchMaxDirt = 500;
 
 function genTrenchMap(%gridSize, %dist, %bperc, %brand)
 {
@@ -335,11 +336,13 @@ function psVoxBlockData_Trench::onBreak(%this, %obj, %player)
 	}
 
 	%cl = %player.client;
-	if(isObject(%cl) && %cl.trenchBuild)
+	if(isObject(%cl) && %cl.trenchBuild && %cl.trenchDirt < $PsVox::TrenchMaxDirt)
 	{
 		%add = $PsVox::TrenchBreakEfficiency * %this.trenchEfficiency;
 		%cl.trenchDirt += %add;
 	}
+	if(%cl.trenchDirt > $PsVox::TrenchMaxDirt)
+		%cl.trenchDirt = $PsVox::TrenchMaxDirt;
 
 	parent::onBreak(%this, %obj, %player);
 }
@@ -423,6 +426,12 @@ function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %addhe
 	%this.genQueue.addJobToBack(psVoxGen_Trench, %this, %size, %bperc, %brand, %scales, %grass);
 }
 
+function trenchDlg(%this, %player)
+{
+	if(%this.trenchBuild)
+		%this.trenchDlg();
+}
+
 function GameConnection::trenchDlg(%this)
 {
 	if(isEventPending(%this.trenchDlg))
@@ -435,7 +444,13 @@ function GameConnection::trenchDlg(%this)
 	%blocks = %dirt / $PsVox::TrenchPlaceRequirement;
 
 	%msg = "\c3DIRT\c6:" SPC mFloatLength(%blocks, 2) @ $PsVox::TrenchDirtUnit;
-	%this.bottomPrint(%msg, 1);
+	if(isObject(%this.player) && %this.player.breakProg > 0)
+	{
+		for(%i = 0; %i < 50; %i++)
+			%str = %str @ (%i <= %this.player.breakProg ? "\c3" : "\c0") @ "|";
+		%msg = %msg TAB %str;
+	}
+	%this.bottomPrint(strReplace(%msg, "\t", "\n"), 1, 1);
 
 	%this.trenchDlg = %this.schedule($PsVox::TrenchDlgSpeed, trenchDlg);
 }
@@ -450,15 +465,19 @@ function Player::trenchPlant(%this)
 		return;
 
 	%bl = %this.getBlockAim();
-	if(isObject(%bl) || %bl.type.getID() != nameToID(psVoxBlockData_None))
+	if(isObject(%bl) && %bl.type.getID() == nameToID(psVoxBlockData_None))
 	{
 		%dirt = %cl.trenchDirt;
 		if(%dirt >= $PsVox::TrenchPlaceRequirement)
 		{
 			%this.playThread(3, activate);
-			ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bl.pos));
 			%bln = %bl.setType($PsVox::TrenchPlaceType);
-			%cl.trenchDirt -= $PsVox::TrenchPlaceRequirement;
+			// echo(%bln SPC %bln.type.name);
+			if(isObject(%bln))
+			{
+				ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bl.pos));
+				%cl.trenchDirt -= $PsVox::TrenchPlaceRequirement;
+			}
 		}
 	}
 
@@ -514,6 +533,8 @@ package psVoxTrench
 				if(isObject(%lbl))
 				{
 					%obj.client.voxBreak = true;
+					%obj.client.voxNoProg = true;
+					%obj.client.voxProgF = trenchDlg;
 					%obj.breakProg = 0;
 					%obj.blockBreak(%lbl);
 					%obj.playThread(3, activate2);
@@ -526,6 +547,8 @@ package psVoxTrench
 				%obj.breakProg = 0;
 				%obj.playThread(3, root);
 				%obj.client.voxBreak = false;
+				%obj.client.voxNoProg = false;
+				%obj.client.voxProgF = "";
 			}
 		}
 		return %r;

@@ -130,10 +130,11 @@ function Player::blockBreak(%this, %bl)
 
 	if(!%this.client.voxBuild && !%this.client.voxBreak)
 		return;
+
 	%look = getField(%this.getBlockLook(), 0);
 	if(isObject(%bl) && !isObject(%this.getMountedImage(0)))
 	{
-		if(%look.getID() != %bl.getID())
+		if(isObject(%look) && %look.getID() != %bl.getID())
 		{
 			%this.breakProg = 0;
 			if(isObject(%look))
@@ -145,12 +146,16 @@ function Player::blockBreak(%this, %bl)
 		}
 		if(%bl.type.breakSpeed > 0)
 			%this.breakProg++;
-		if(isObject(%c = %this.client))
+		if(isObject(%c = %this.client) && !%c.voxNoProg)
 		{
 			for(%i = 0; %i < 50; %i++)
 				%str = %str @ (%i <= %this.breakProg ? "\c3" : "\c0") @ "|";
 			%c.bottomPrint("<just:center>" @ %str, 1, 1, 1, 1);
 		}
+
+		if(isFunction(%c.voxProgF))
+			call(%c.voxProgF, %c, %this);
+
 		if(%this.breakProg >= 50)
 		{
 			// echo(%bl SPC %bl.type.name SPC %bl.pos);

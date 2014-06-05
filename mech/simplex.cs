@@ -909,7 +909,7 @@ function psVoxGen_SimpChunk_1_1(%this, %start, %end, %d0, %d1, %shift)
 {
 	if(!isObject(%d0) || !isObject(%d1))
 		return;
-	echo("cavegen");
+	// echo("cavegen");
 
 	%minX = getWord(%start, 0);
 	%minY = getWord(%start, 1);
