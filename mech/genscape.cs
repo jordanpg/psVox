@@ -1,5 +1,6 @@
 $PsVox::GenTime = 250;
 
+//Create and initialise the generation queue.
 function psVox::initGen(%this)
 {
 	if(isObject(%this.genQueue))
@@ -11,6 +12,7 @@ function psVox::initGen(%this)
 	return %this.genQueue;
 }
 
+//Do the front job in the queue.
 function psVoxGenQueue::doFront(%this)
 {
 	if(%this.jobs == 0)
@@ -45,6 +47,7 @@ function psVoxGenQueue::doFront(%this)
 	return %r;
 }
 
+//Add a job to the back of the queue.
 function psVoxGenQueue::addJobToBack(%this, %func, %a0, %a1, %a2, %a3, %a4, %a5, %a6, %a7, %a8, %a9, %a10, %a11, %a12, %a13, %a14, %a15)
 {
 	if(!isFunction(%func))
@@ -58,6 +61,7 @@ function psVoxGenQueue::addJobToBack(%this, %func, %a0, %a1, %a2, %a3, %a4, %a5,
 	return true;
 }
 
+//Add a job to the front of the queue.
 function psVoxGenQueue::addJobToFront(%this, %func, %a0, %a1, %a2, %a3, %a4, %a5, %a6, %a7, %a8, %a9, %a10, %a11, %a12, %a13, %a14, %a15)
 {
 	if(!isFunction(%func))
@@ -81,6 +85,7 @@ function psVoxGenQueue::addJobToFront(%this, %func, %a0, %a1, %a2, %a3, %a4, %a5
 	return true;
 }
 
+//ding dong holpful camment
 function psVoxGenQueue::tick(%this)
 {
 	if(isEventPending(%this.tick))
@@ -92,17 +97,20 @@ function psVoxGenQueue::tick(%this)
 	$PsVox::GenTick = %this.tick = %this.schedule($PsVox::GenTime, tick);
 }
 
+//Callback for when the queue has finished all its current jobs.
 function psVoxGenQueue::onQueueFinished(%this)
 {
 	//pass
 }
 
 
+//Generation job to make a chunk.
 function psVoxGen_Chunk(%this, %x, %y, %z)
 {
 	%this.createChunk(%x, %y, %z SPC %z);
 }
 
+//Generation job to make a group of chunks.
 function psVoxGen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ)
 {
 	%this.genQueue.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
@@ -128,6 +136,7 @@ function psVoxGen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, 
 	}
 }
 
+//Starts a generation job to make an area of chunks.
 function psVox::Gen_Chunks(%this, %startX, %startY, %startZ, %endX, %endY, %endZ)
 {
 	if(!isObject(%this.genQueue))

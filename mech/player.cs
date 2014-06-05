@@ -1,3 +1,4 @@
+//Do a raycast to see what the player is looking at.
 function Player::eyeCast(%this, %r, %t)
 {
 	%eye = %this.getEyePoint();
@@ -6,6 +7,7 @@ function Player::eyeCast(%this, %r, %t)
 	return containerRayCast(%eye, %end, %t);
 }
 
+//Get the normal from a raycast.
 function getRayNormal(%ray)
 {
 	%nX = mFloatLength(getWord(%ray, 4), 0);
@@ -14,6 +16,7 @@ function getRayNormal(%ray)
 	return %nX SPC %nY SPC %nZ;
 }
 
+//Get the block object associated with what the player is looking at.
 function Player::getBlockLook(%this)
 {
 	%ray = %this.eyeCast(8, $TypeMasks::FxBrickAlwaysObjectType);
@@ -27,6 +30,7 @@ function Player::getBlockLook(%this)
 	return %obj.block TAB %ray;
 }
 
+//Get the block which the player is 'aiming' at, solved with the normal hit by the raycast.
 function Player::getBlockAim(%this)
 {
 	%look = %this.getBlockLook();
@@ -45,6 +49,7 @@ function Player::getBlockAim(%this)
 	return %rel;
 }
 
+//Command to select a block type for voxel build mode.
 function serverCmdSelectType(%this, %n1, %n2, %n3, %n4, %n5, %n6, %n7, %n8)
 {
 	if(!%this.voxBuild)
@@ -57,6 +62,7 @@ function serverCmdSelectType(%this, %n1, %n2, %n3, %n4, %n5, %n6, %n7, %n8)
 	%this.bottomPrint("\c6Selected block type" SPC %type.name @ ".", 3);
 }
 
+//Command to enter voxel build mode.
 function serverCmdvoxBuild(%this)
 {
 	if(!(%this.isAdmin || %this.isSuperAdmin))
@@ -67,6 +73,7 @@ function serverCmdvoxBuild(%this)
 	messageClient(%this, '', "\c6You" SPC (%this.voxBuild ? "are now in" : "are no longer in") SPC "voxel build mode.");
 }
 
+//Resets sub chunks within a given radius.
 function serverCmdClearNearVox(%this, %r)
 {
 	if(!%this.isSuperAdmin)
@@ -86,6 +93,7 @@ function serverCmdClearNearVox(%this, %r)
 	}
 }
 
+//makes da rench work
 function voxelWrenchImage::onFire(%this, %obj, %slot)
 {
 	%ray = %obj.getBlockLook();
@@ -114,12 +122,13 @@ function voxelWrenchImage::onFire(%this, %obj, %slot)
 	%p.explode();
 }
 
+//Function that handles player block breaking.
 function Player::blockBreak(%this, %bl)
 {
 	if(isEventPending(%this.blockBreak))
 		cancel(%this.blockBreak);
 
-	if(!%this.client.voxBuild)
+	if(!%this.client.voxBuild && !%this.client.voxBreak)
 		return;
 	%look = getField(%this.getBlockLook(), 0);
 	if(isObject(%bl) && !isObject(%this.getMountedImage(0)))

@@ -1,3 +1,4 @@
+//Callback for when a block is broken.
 function psVoxBlockData::onBreak(%this, %obj, %player)
 {
 	//pass
@@ -21,6 +22,7 @@ function psVoxBlockData::onBreak(%this, %obj, %player)
 // 	}
 // }
 
+//Start a "radius" search within voxel space.
 function psVox::startBoxSearch(%ps, %pos, %range, %this)
 {
 	if(!isObject(%this))
@@ -49,6 +51,7 @@ function psVox::startBoxSearch(%ps, %pos, %range, %this)
 	%this.boxCurr = %min;
 }
 
+//Start a defined box search in voxel space.
 function psVox::startBoxSearch2(%ps, %pos, %box, %this)
 {
 	if(!isObject(%this))
@@ -71,6 +74,7 @@ function psVox::startBoxSearch2(%ps, %pos, %box, %this)
 	%this.boxCurr = %min;
 }
 
+//Returns the next object in the voxel space search.
 function psVox::boxSearchNext(%this)
 {
 	if(%this.boxSearch $= "")
@@ -108,6 +112,7 @@ function psVox::boxSearchNext(%this)
 	return %this.getBlock(%cX, %cY, %cZ);
 }
 
+//Same as above for block objects.
 function psVoxBlock::boxSearchNext(%this)
 {
 	%this.boxSearch = %this.getProp("boxSearch");
@@ -147,6 +152,7 @@ function psVoxBlock::boxSearchNext(%this)
 	return %this.psVox.getBlock(%cX, %cY, %cZ);
 }
 
+// The following was a quickly-scrapped concept of an object that would exist solely to do a voxel space search.
 // function psVoxSearchSlave::boxSearchNext(%this)
 // {
 // 	if(%this.boxSearch $= "")

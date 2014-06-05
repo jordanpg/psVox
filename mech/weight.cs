@@ -2,6 +2,9 @@ $PsVox::CaveInProb = 0;
 $PsVox::CaveInProx = 3;
 $PsVox::CaveInDist = 3;
 
+//NOTE: This script handles block weight and cave-ins. The feature is not optimised and lags /horribly/. It has been abandoned for now.
+//This can be re-enabled simply by changing the cave in probability global above to a fraction above zero. (e.g. (1 / 8))
+
 function psVoxBlock::getWeight(%this)
 {
 	return %this.type.weight + 0;

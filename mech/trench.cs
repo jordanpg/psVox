@@ -1,4 +1,10 @@
 $PsVox::TrenchHeight = 4;
+$PsVox::TrenchDlgSpeed = 500;
+$PsVox::TrenchPlantSpeed = 275;
+$PsVox::TrenchBreakEfficiency = 1;
+$PsVox::TrenchPlaceRequirement = 1;
+$PsVox::TrenchPlaceType = psVoBlockData_Dirt2x;
+$PsVox::TrenchDirtUnit = "cm³";
 
 function genTrenchMap(%gridSize, %dist, %bperc, %brand)
 {
@@ -328,6 +334,13 @@ function psVoxBlockData_Trench::onBreak(%this, %obj, %player)
 		}
 	}
 
+	%cl = %player.client;
+	if(isObject(%cl) && %cl.trenchBuild)
+	{
+		%add = $PsVox::TrenchBreakEfficiency * %this.trenchEfficiency;
+		%cl.trenchDirt += %add;
+	}
+
 	parent::onBreak(%this, %obj, %player);
 }
 
@@ -409,3 +422,113 @@ function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %addhe
 	$psVoxGen_Phase = 0;
 	%this.genQueue.addJobToBack(psVoxGen_Trench, %this, %size, %bperc, %brand, %scales, %grass);
 }
+
+function GameConnection::trenchDlg(%this)
+{
+	if(isEventPending(%this.trenchDlg))
+		cancel(%this.trenchDlg);
+
+	if(!%this.trenchBuild)
+		return;
+
+	%dirt = %this.trenchDirt;
+	%blocks = %dirt / $PsVox::TrenchPlaceRequirement;
+
+	%msg = "\c3DIRT\c6:" SPC mFloatLength(%blocks, 2) @ $PsVox::TrenchDirtUnit;
+	%this.bottomPrint(%msg, 1);
+
+	%this.trenchDlg = %this.schedule($PsVox::TrenchDlgSpeed, trenchDlg);
+}
+
+function Player::trenchPlant(%this)
+{
+	if(isEventPending(%this.trenchPlant))
+		cancel(%this.trenchPlant);
+
+	%cl = %this.client;
+	if(!isObject(%cl))
+		return;
+
+	%bl = %this.getBlockAim();
+	if(isObject(%bl) || %bl.type.getID() != nameToID(psVoxBlockData_None))
+	{
+		%dirt = %cl.trenchDirt;
+		if(%dirt >= $PsVox::TrenchPlaceRequirement)
+		{
+			%this.playThread(3, activate);
+			ServerPlay3D(BrickPlantSound, PsVox.getRealPos(%bl.pos));
+			%bln = %bl.setType($PsVox::TrenchPlaceType);
+			%cl.trenchDirt -= $PsVox::TrenchPlaceRequirement;
+		}
+	}
+
+	%this.trenchPlant = %this.schedule($PsVox::TrenchPlantSpeed, trenchPlant);
+}
+
+package psVoxTrench
+{
+	function Armor::onTrigger(%this, %obj, %slot, %val)
+	{
+		%r = parent::onTrigger(%this, %obj, %slot, %val);
+
+		if(!isObject(%c = %obj.client))
+			return %r;
+		if(!%c.trenchBuild || %c.voxBuild)
+			return %r;
+
+		%look = %obj.getBlockLook();
+		%lbl = getField(%look, 0);
+		if(%slot $= 4)
+		{
+			if(%val)
+			{
+				if(isEventPending(%obj.blockBreak))
+				{
+					cancel(%obj.blockBreak);
+					%obj.breakProg = 0;
+					if(isObject(%lbl))
+						%lbl.setRotation(%lbl.rotation + (%obj.isCrouched() ? 1 : -1));
+					return %r;
+				}
+
+				if(isObject(%lbl) && (%lbl.type.activated && !%obj.isCrouched()))
+				{
+					%ray = getField(%look, 1);
+					%lbl.type.onActivated(%lbl, %obj, %ray);
+					return %r;
+				}
+
+				%obj.trenchPlant();
+			}
+			else
+			{
+				if(isEventPending(%obj.trenchPlant))
+					cancel(%obj.trenchPlant);
+				%obj.playThread(3, root);
+			}
+		}
+		else if(%slot $= 0)
+		{
+			if(%val)
+			{
+				if(isObject(%lbl))
+				{
+					%obj.client.voxBreak = true;
+					%obj.breakProg = 0;
+					%obj.blockBreak(%lbl);
+					%obj.playThread(3, activate2);
+				}
+			}
+			else
+			{
+				if(isEventPending(%obj.blockBreak))
+					cancel(%obj.blockBreak);
+				%obj.breakProg = 0;
+				%obj.playThread(3, root);
+				%obj.client.voxBreak = false;
+			}
+		}
+		return %r;
+	}
+};
+activatePackage(psVoxTrench);

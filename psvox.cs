@@ -1,5 +1,6 @@
 $PsVox::BlockPlantRetry = 150;
 
+//Create the psVox object.
 function psVox_New(%brickGroup, %cell, %chunk)
 {
 	if(isObject(PsVox))
@@ -17,16 +18,19 @@ function psVox_New(%brickGroup, %cell, %chunk)
 				chunkSize = (%chunk > 0 ? %chunk : 16);
 				cellSize = (%cell >= 0.5 ? %cell : 2);
 			};
+	//Initialise the generation queue system.
 	PsVox.initGen();
 	return $PSVOX;
 }
 
+//Create the psVoxBlockData group.
 function psVoxBlockGroup_New()
 {
 	if(isObject(psVoxBlockGroup))
 		return psVoxBlockGroup;
 	$PVBLOCKGROUP = new SimGroup(psVoxBlockGroup)
 					{
+						//Default none type.
 						new ScriptObject(psVoxBlockData_None)
 						{
 							class = "psVoxBlockData";
@@ -49,12 +53,14 @@ function psVoxBlockGroup_New()
 							support = 0;
 						};
 					};
+	//Make sure psVox knows we exist.
 	if(isObject(PsVox))
 		PsVox.blockGroup = $PVBLOCKGROUP;
 
 	return $PVBLOCKGROUP;
 }
 
+//Searches by name for a block data object.
 function findBlockData(%name)
 {
 	if(!isObject(psVoxBlockGroup))
@@ -69,6 +75,7 @@ function findBlockData(%name)
 	return -1;
 }
 
+//Adds psVoxBlockData objects to the block group automatically.
 function psVoxBlockData::onAdd(%this)
 {
 	if(!isObject(psVoxBlockGroup))
@@ -76,6 +83,7 @@ function psVoxBlockData::onAdd(%this)
 	psVoxBlockGroup.add(%this);
 }
 
+//Callback for when a block in a subChunk is set to a data type.
 function psVoxBlockData::onBlockSet(%this, %obj, %overrideKeep, %noupdate)
 {
 	%obj.transistion();
@@ -88,6 +96,7 @@ function psVoxBlockData::onBlockSet(%this, %obj, %overrideKeep, %noupdate)
 		%obj.schedule(0, update);
 }
 
+//Callback for when a block is rotated.
 function psVoxBlockData::onBlockRotate(%this, %obj, %r, %noupdate)
 {
 	if(%this.rotates)
@@ -96,6 +105,7 @@ function psVoxBlockData::onBlockRotate(%this, %obj, %r, %noupdate)
 		%obj.schedule(0, update);
 }
 
+//Callback for when the voxel wrench is used on a block.
 function psVoxBlockData::onVoxWrench(%this, %block, %obj, %brick, %noupdate)
 {
 	//Naffin' here.
@@ -103,6 +113,7 @@ function psVoxBlockData::onVoxWrench(%this, %block, %obj, %brick, %noupdate)
 		%obj.schedule(0, update);
 }
 
+//Callback for when a player activates a block.
 function psVoxBlockData::onActivated(%this, %block, %obj, %ray, %noupdate)
 {
 	//Naffin' here oither.
@@ -110,6 +121,7 @@ function psVoxBlockData::onActivated(%this, %block, %obj, %ray, %noupdate)
 		%obj.schedule(0, update);
 }
 
+//Used to get a chunk position from a voxel world position.
 function psVox::getChunkPos(%this, %pos)
 {
 	%x = getWord(%pos, 0);
@@ -122,6 +134,7 @@ function psVox::getChunkPos(%this, %pos)
 	return %x SPC %y @ %z;
 }
 
+//Used to get a Torque space position from a voxel world position.
 function psVox::getRealPos(%this, %vPos)
 {
 	%rPos = VectorScale(%vPos, %this.cellSize);
@@ -129,6 +142,7 @@ function psVox::getRealPos(%this, %vPos)
 	return %rPos;
 }
 
+//Used to get a voxel world position from a Torque space position.
 function psVox::getVoxPos(%this, %rPos)
 {
 	// %rX = mFloor(getWord(%rPos, 0));
@@ -144,6 +158,7 @@ function psVox::getVoxPos(%this, %rPos)
 	return %x SPC %y SPC %z;
 }
 
+//Used to get a voxel world position from a local sub chunk position.
 function psVoxSubChunk::getGlobalPos(%this, %pos)
 {
 	%psVox = %this.psVox;
@@ -159,6 +174,7 @@ function psVoxSubChunk::getGlobalPos(%this, %pos)
 	return (%x + %gX) SPC (%y + %gY) SPC (%z + %gZ);
 }
 
+//Create a new chunk object.
 function psVox::createChunk(%this, %cX, %cY, %preload)
 {
 	if(%preload $= "")
@@ -203,6 +219,7 @@ function psVox::createChunk(%this, %cX, %cY, %preload)
 	return %c;
 }
 
+//Used to create an area of chunks at once.
 function psVox::createChunks(%this, %range, %preload)
 {
 	%cXMin = getWord(%range, 0);
@@ -217,6 +234,7 @@ function psVox::createChunks(%this, %range, %preload)
 	return trim(%list);
 }
 
+//Get the chunk at the given chunk position.
 function psVox::getChunk(%this, %cX, %cY)
 {
 	%c = %this.chunk[%cX, %cY];
@@ -225,6 +243,7 @@ function psVox::getChunk(%this, %cX, %cY)
 	return %c;
 }
 
+//Create a sub chunk within a chunk.
 function psVoxChunk::createSubChunk(%this, %cZ, %type)
 {
 	%c = %this.getSubChunk(%cZ);
@@ -252,6 +271,7 @@ function psVoxChunk::createSubChunk(%this, %cZ, %type)
 	return %c;
 }
 
+//Get a sub chunk within a chunk.
 function psVoxChunk::getSubChunk(%this, %cZ)
 {
 	%c = %this.subChunk[%cZ];
@@ -260,6 +280,7 @@ function psVoxChunk::getSubChunk(%this, %cZ)
 	return %c;
 }
 
+//Get a sub chunk at the given XYZ chunk position.
 function psVox::getSubChunk(%this, %cX, %cY, %cZ)
 {
 	%c = %this.subChunk[%cX, %cY, %cZ];
@@ -268,6 +289,7 @@ function psVox::getSubChunk(%this, %cX, %cY, %cZ)
 	return %c;
 }
 
+//Create a sub chunk at the given XYZ position.
 function psVox::createSubChunk(%this, %cX, %cY, %cZ, %type)
 {
 	%sc = %this.getSubChunk(%cX, %cY, %cZ);
@@ -282,6 +304,7 @@ function psVox::createSubChunk(%this, %cX, %cY, %cZ, %type)
 	return %sc;
 }
 
+//Initialise the sub chunk by filling it with blocks.
 function psVoxSubChunk::init(%this, %type)
 {
 	if(%this.init)
@@ -299,6 +322,7 @@ function psVoxSubChunk::init(%this, %type)
 	return true;
 }
 
+//Create a block at the given local position in the sub chunk.
 function psVoxSubChunk::createBlock(%this, %x, %y, %z, %data)
 {
 	%size = %this.psVox.chunkSize;
@@ -346,6 +370,7 @@ function psVoxSubChunk::createBlock(%this, %x, %y, %z, %data)
 	return %block;
 }
 
+//Set the block at the given local position to a different type.
 function psVoxSubChunk::setBlock(%this, %x, %y, %z, %data, %noupdate, %carryProps)
 {
 	if(%data.class !$= "psVoxBlockData" && %data.superClass !$= "psVoxBlockData")
@@ -394,6 +419,7 @@ function psVoxSubChunk::setBlock(%this, %x, %y, %z, %data, %noupdate, %carryProp
 // 	return true;
 // }
 
+//Swap two blocks.
 function psVoxBlock::swap(%this, %block)
 {
 	if(!isObject(%block) || %block.class !$= "psVoxBlock")
@@ -417,6 +443,7 @@ function psVoxBlock::swap(%this, %block)
 	return true;
 }
 
+//Set a block within a chunk.
 function psVoxChunk::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 {
 	%cZ = mFloor(%z / %this.parent.chunkSize);
@@ -426,6 +453,7 @@ function psVoxChunk::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 	return %sc.setBlock(%x, %y, (%z % 16), %data, %noup, %carry);
 }
 
+//Set a block at the given voxel world position.
 function psVox::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 {
 	%cpos = %this.getChunkPos(%x SPC %y SPC %z);
@@ -438,6 +466,7 @@ function psVox::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 	return %sc.setBlock((%x % 16), (%y % 16), (%z % 16), %data, %noup, %carry);
 }
 
+//Get the block at the given local position.
 function psVoxSubChunk::getBlock(%this, %x, %y, %z)
 {
 	%block = %this.block[%x, %y, %z];
@@ -446,6 +475,7 @@ function psVoxSubChunk::getBlock(%this, %x, %y, %z)
 	return %block;
 }
 
+//Get the block at the given position within the chunk.
 function psVoxChunk::getBlock(%this, %x, %y, %z)
 {
 	%cZ = mFloor(%z / %this.parent.chunkSize);
@@ -459,6 +489,7 @@ function psVoxChunk::getBlock(%this, %x, %y, %z)
 	return %block;
 }
 
+//Get the block at the given voxel world position.
 function psVox::getBlock(%this, %x, %y, %z)
 {
 	%cpos = %this.getChunkPos(%x SPC %y SPC %z);
@@ -475,6 +506,7 @@ function psVox::getBlock(%this, %x, %y, %z)
 	return %block;
 }
 
+//Resets all blocks within the chunk to the None type.
 function psVoxSubChunk::reset(%this)
 {
 	if(isEventPending(%this.reset))
@@ -502,6 +534,7 @@ function psVoxSubChunk::reset(%this)
 		%this.resetting = false;
 }
 
+//Blastoff hook for planting blocks.
 function blastOffHook_psVoxCheck(%this, %box, %block)
 {
 	%in = brickInBox(%this, %box, 0, 0);
@@ -513,6 +546,7 @@ function blastOffHook_psVoxCheck(%this, %box, %block)
 	return %in;
 }
 
+//Set the block's rotation between zero and three.
 function psVoxBlock::setRotation(%this, %r)
 {
 	if(%r > 3 || %r < 0)
@@ -524,6 +558,7 @@ function psVoxBlock::setRotation(%this, %r)
 	return %r;
 }
 
+//Set the block at this position to a different type.
 function psVoxBlock::setType(%this, %type, %noup)
 {
 	%x = getWord(%this.lPos, 0);
@@ -532,6 +567,7 @@ function psVoxBlock::setType(%this, %type, %noup)
 	return %this.parent.setBlock(%x, %y, %z, %type, %noup);
 }
 
+//Clear all bricks the block has created.
 function psVoxBlock::clearBricks(%this)
 {
 	if(isEventPending(%this.clearTick))
@@ -550,6 +586,7 @@ function psVoxBlock::clearBricks(%this)
 		%this.clearTick = %this.schedule(1, clearBricks);
 }
 
+//Transition the block to a new shape.
 function psVoxBlock::transistion(%this)
 {
 	if(isEventPending(%this.clearTick))
@@ -576,6 +613,7 @@ function psVoxBlock::transistion(%this)
 		%this.plant();
 }
 
+//Enqueue the block in the builder, or do a local retry until it can be planted.
 function psVoxBlock::plant(%this)
 {
 	if(isEventPending(%this.retry))
@@ -593,6 +631,7 @@ function psVoxBlock::plant(%this)
 		%this.retry = %this.schedule($PsVox::BlockPlantRetry, plant);
 }
 
+//Actually plants the block.
 function psVoxBlock::_plant(%this)
 {
 	// echo(p);
@@ -628,11 +667,13 @@ function psVoxBlock::_plant(%this)
 	}
 }
 
+//Get a position relative to the block.
 function psVoxBlock::getRelativePos(%this, %rel)
 {
 	return VectorAdd(%this.pos, %rel);
 }
 
+//Get a block relative to this one.
 function psVoxBlock::getRelative(%this, %rel)
 {
 	%pos = %this.getRelativePos(%rel);
@@ -642,6 +683,7 @@ function psVoxBlock::getRelative(%this, %rel)
 	return %this.psVox.getBlock(%x, %y, %z);
 }
 
+//Check properties for a given tag.
 function psVoxProps::hasTag(%this, %name, %c)
 {
 	%name = firstWord(%name);
@@ -660,6 +702,7 @@ function psVoxProps::hasTag(%this, %name, %c)
 	return false;
 }
 
+//Add a tag to props.
 function psVoxProps::addTag(%this, %name)
 {
 	%name = firstWord(%name);
@@ -673,6 +716,7 @@ function psVoxProps::addTag(%this, %name)
 	return true;
 }
 
+//Set a tag value.
 function psVoxProps::setTag(%this, %name, %val)
 {
 	%name = firstWord(%name);
@@ -684,6 +728,7 @@ function psVoxProps::setTag(%this, %name, %val)
 	return true;
 }
 
+//Get a tag value.
 function psVoxProps::getTag(%this, %name)
 {
 	%name = firstWord(%name);
@@ -694,6 +739,7 @@ function psVoxProps::getTag(%this, %name)
 	return %this.tagv[%i];
 }
 
+//Clear all tags.
 function psVoxProps::clearTags(%this)
 {
 	for(%i = %this.tags-1; %i >= 0; %i--)
@@ -706,11 +752,13 @@ function psVoxProps::clearTags(%this)
 	%this.tags = 0;
 }
 
+//Get the given tag from the block.
 function psVoxBlock::getProp(%this, %name)
 {
 	return %this.props.getTag(%name);
 }
 
+//Set the given tag on the block.
 function psVoxBlock::setProp(%this, %name, %val)
 {
 	return %this.props.setTag(%name, %val);

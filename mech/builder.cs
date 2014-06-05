@@ -2,6 +2,7 @@ $PsVox::BuilderBatchSize = 50;
 $PsVox::BuilderSpeed = 250;
 $PsVox::BuilderMaxRecurse = 5;
 
+//Create and initialise the builder object.
 function psVoxBuilder_New(%mode)
 {
 	if(isObject(psVoxBuilder))
@@ -21,6 +22,7 @@ function psVoxBuilder_New(%mode)
 	return %this;
 }
 
+//Build a batch of blocks by planting them individually.
 function psVoxBuilder::buildIndBatch(%this)
 {
 	if(%this.queue <= 0)
@@ -90,6 +92,7 @@ function psVoxBuilder::buildIndBatch(%this)
 	}
 }
 
+//Build a batch of blocks by creating a blastoff shape for them (unfinished)
 function psVoxBuilder::buildShapeBatch(%this)
 {
 	if(%this.queue <= 0)
@@ -121,6 +124,7 @@ function psVoxBuilder::buildShapeBatch(%this)
 	}
 }
 
+//Add a block to the builder queue.
 function psVoxBuilder::addBlock(%this, %obj)
 {
 	if(!isObject(%obj) || %obj.class !$= "psVoxBlock")
@@ -135,6 +139,7 @@ function psVoxBuilder::addBlock(%this, %obj)
 	return true;
 }
 
+//tick tock helpful comment
 function psVoxBuilder::tick(%this)
 {
 	if(isEventPending(%this.tick))
@@ -151,6 +156,7 @@ function psVoxBuilder::tick(%this)
 	$PsVox::BuilderTick = %this.tick = %this.schedule($PsVox::BuilderSpeed, tick);
 }
 
+//Unfinished blastoff input for builder shapes.
 function blastOff_InputpsVoxShape(%this, %obj)
 {
 	if(!isBlastOff(%this))

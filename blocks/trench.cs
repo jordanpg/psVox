@@ -27,6 +27,8 @@ if(!isObject(psVoxBlockData_Dirt2x))
 		breakSpeed = 5;
 		weight = 1;
 		support = -1;
+
+		trenchEfficiency = 1;
 	};
 }
 
@@ -54,6 +56,8 @@ if(!isObject(psVoxBlockData_Grass2x))
 		breakSpeed = 7;
 		weight = 1;
 		support = -1;
+
+		trenchEfficiency = 0.75;
 	};
 }
 
