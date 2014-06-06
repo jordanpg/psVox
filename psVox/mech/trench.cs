@@ -363,7 +363,7 @@ function psVoxBlockData_Trench::onBlockSet(%this, %obj, %overrideKeep, %noupdate
 // 	}
 // }
 
-function psVoxGen_Trench(%this, %size, %bperc, %brand, %scales, %grass)
+function psVoxGen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %caves, %cp0, %cp1)
 {
 	%map = genTrenchMap(%size, 0, %bperc, %brand);
 	if(!%map.done)
@@ -378,10 +378,10 @@ function psVoxGen_Trench(%this, %size, %bperc, %brand, %scales, %grass)
 	// %this.Gen_Chunks(%minX, %minY, 0, %maxX, %maxY, $PsVox::TrenchHeight);
 	$psVoxTrench_Phase = 1;
 
-	%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this.psVox, %size, %map, %scales, %grass, 0, 0, 0);
+	%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this.psVox, %size, %map, %scales, %grass, 0, 0, 0, %caves, %cp0, %cp1);
 }
 
-function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ)
+function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ, %caves, %cp0, %cp1)
 {
 	%minX = 0;
 	%minY = 0;
@@ -391,7 +391,7 @@ function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ)
 	%c = %map.map[%cX, %cY];
 
 	if(%c != 0)
-		%this.Gen_Simplex(%cX, %cY, %cZ, %scales, %grass);
+		%this.Gen_Simplex(%cX, %cY, %cZ, %scales, %grass, %caves, %cp0, %cp1);
 
 	%cX++;
 	if(%cX > %maxX)
@@ -406,7 +406,7 @@ function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ)
 	}
 	if(%cZ <= $PsVox::TrenchHeight)
 	{
-		%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this, %size, %map, %scales, %grass, %cX, %cY, %cZ);
+		%this.genQueue.addJobToBack(psVoxGen_Trench_1, %this, %size, %map, %scales, %grass, %cX, %cY, %cZ, %caves, %cp0, %cp1);
 	}
 	else
 		$psVoxTrench_Phase = 2;
@@ -414,7 +414,7 @@ function psVoxGen_Trench_1(%this, %size, %map, %scales, %grass, %cX, %cY, %cZ)
 
 // function psVoxGen_Trench_2(%this)
 
-function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %addheight, %seed, %freq, %iter, %persist, %low, %high)
+function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %caves, %cp0, %cp1, %addheight, %seed, %freq, %iter, %persist, %low, %high)
 {
 	if(!isObject(%this.genQueue))
 		%this.initGen();
@@ -423,7 +423,7 @@ function PsVox::Gen_Trench(%this, %size, %bperc, %brand, %scales, %grass, %addhe
 		%this.initSimplex(%seed, %freq, %iter, %persist, %low, %high, %addheight);
 
 	$psVoxGen_Phase = 0;
-	%this.genQueue.addJobToBack(psVoxGen_Trench, %this, %size, %bperc, %brand, %scales, %grass);
+	%this.genQueue.addJobToBack(psVoxGen_Trench, %this, %size, %bperc, %brand, %scales, %grass, %caves, %cp0, %cp1);
 }
 
 function trenchDlg(%this, %player)

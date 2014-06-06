@@ -37,6 +37,7 @@ function psVoxBlockGroup_New()
 							name = "None";
 
 							shapeType = "Empty";
+							shapeEmpty = true;
 							solid = false;
 							opaque = false;
 							trigger = false;
@@ -529,7 +530,7 @@ function psVoxSubChunk::reset(%this)
 		%t++;
 	}
 	if(%this.unchecked > 0)
-		%this.reset = %this.schedule(1, reset);
+		%this.reset = %this.schedule(33, reset);
 	else
 		%this.resetting = false;
 }
@@ -619,7 +620,7 @@ function psVoxBlock::plant(%this)
 	if(isEventPending(%this.retry))
 		cancel(%this.retry);
 
-	if(%this.type.shapeType $= "Empty" || !isObject(%this.type.shape))
+	if(%this.type.shapeEmpty || !isObject(%this.type.shape))
 		return false;
 
 	if(isObject(%this.psVox.builder))
@@ -636,7 +637,7 @@ function psVoxBlock::_plant(%this)
 {
 	// echo(p);
 	%type = %this.type;
-	if(%type.shapeType $= "Empty")
+	if(%type.shapeEmpty)
 		return false;
 	%bo = %type.shape;
 	if(!isObject(%bo))
@@ -661,9 +662,17 @@ function psVoxBlock::_plant(%this)
 
 	if(isObject(%bo))
 	{
-		%bo.setOutput("BASICPHYS");
-		%bo.output(%rPos, %this.rotation, -1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %box, %this);
-		return true;
+		if(!%type.shapeBasic)
+		{
+			%bo.setOutput("BASICPHYS");
+			%bo.output(%rPos, %this.rotation, -1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %box, %this);
+			return true;
+		}
+		else
+		{
+			%bo.setOutput("SUPERBASIC");
+			%bo.output(%rPos, %this.rotation, %this.psVox.brickGroup, "blastOffHook_psVoxCheck", %box, %this);
+		}
 	}
 }
 

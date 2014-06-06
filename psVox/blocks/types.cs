@@ -12,6 +12,7 @@ if(!isObject(psVoxBlockData_Wall))
 
 		shapeType = "Block";
 		shape = blastOff_NewPreload("BDWall", "STRING", "4x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("0.5 0.5 0.5 1") SPC "0 0 0 1 1 1");
+		shapeBasic = true;
 		solid = true;
 		opaque = true;
 		trigger = false;
@@ -38,6 +39,7 @@ if(!isObject(psVoxBlockData_Glass))
 
 		shapeType = "Block";
 		shape = blastOff_NewPreload("BDGlass", "STRING", "4x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("1 1 1 0.2") SPC "0 0 0 1 1 1");
+		shapeBasic = true;
 		solid = true;
 		opaque = false;
 		trigger = false;
@@ -64,6 +66,7 @@ if(!isObject(psVoxBlockData_Test))
 
 		shapeType = "Save";
 		shape = blastOff_NewPreload("BDTest", "BLS", "saves/shape_testCell.bls", 1);
+		shapeBasic = false;
 		solid = false;
 		opaque = false;
 		trigger = false;
@@ -90,6 +93,7 @@ if(!isObject(psVoxBlockData_SupportT1))
 
 		shapeType = "Save";
 		shape = blastOff_NewPreload("BDS1", "BLS", "saves/shape_support1.bls", 1);
+		shapeBasic = true;
 		solid = false;
 		opaque = false;
 		trigger = false;

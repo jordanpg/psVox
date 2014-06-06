@@ -13,6 +13,7 @@ if(!isObject(psVoxBlockData_Dirt))
 
 		shapeType = "Block";
 		shape = blastOff_NewPreload("BDDirt", "STRING", "4x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1");
+		shapeBasic = true;
 		solid = true;
 		opaque = true;
 		trigger = false;

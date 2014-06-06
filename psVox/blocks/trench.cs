@@ -13,6 +13,7 @@ if(!isObject(psVoxBlockData_Dirt2x))
 
 		shapeType = "Block";
 		shape = blastOff_NewPreload("BDDirt2x", "STRING", "2x Cube\" 0 0 0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1");
+		shapeBasic = true;
 		solid = true;
 		opaque = true;
 		trigger = false;
@@ -42,6 +43,7 @@ if(!isObject(psVoxBlockData_Grass2x))
 
 		shapeType = "Block";
 		shape = blastOff_NewPreload("BDGrass2x", "STRING", "2x Cube -1f\" 0 0 0.0 0 1" SPC getClosestPaintColor("0.53 0.3 0 1") SPC "0 0 0 1 1 1" NL "2x2F\" 0 0 0.4 0 1" SPC getClosestPaintColor("0 0.5 0 1") SPC "0 0 0 1 1 1");
+		shapeBasic = true;
 		solid = true;
 		opaque = true;
 		trigger = false;
@@ -70,6 +72,7 @@ if(!isObject(psVoxBlockData_Empty))
 		name = "Empty";
 
 		shapeType = "Empty";
+		shapeEmpty = true;
 		solid = false;
 		opaque = false;
 		trigger = false;

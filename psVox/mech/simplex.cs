@@ -1005,6 +1005,25 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 	}
 }
 
+function psVoxGen_SimpArea(%this, %scale, %grass, %caves, %cp0, %cp1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %cX, %cY, %cZ)
+{
+	%this.Gen_Simplex(%cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1);
+
+	%cX++;
+	if(%cX > %maxX)
+	{
+		%cX = %minX;
+		%cY++;
+	}
+	if(%cY > %maxY)
+	{
+		%cY = %minY;
+		%cZ++;
+	}
+	if(%cZ <= %maxZ)
+		%this.genQueue.addJobToBack(psVoxGen_SimpArea, %this, %scale, %grass, %caves, %cp0, %cp1, %minX, %minY, %minZ, %maxX, %maxY, %maxZ, %cX, %cY, %cZ);
+}
+
 function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift, %addheight, %seed, %freq, %iter, %persist, %low, %high)
 {
 	if(!isObject(%this.terrain))
@@ -1019,4 +1038,46 @@ function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, 
 		%gen.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
 
 	%gen.addJobToBack(psVoxGen_SimpChunk, %this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift);
+}
+
+function psVox::Gen_SimpArea(%this, %startX, %startY, %startZ, %endX, %endY, %endZ, %scale, %grass, %caves, %cp0, %cp1, %shift, %addheight, %seed, %freq, %iter, %persist, %low, %high)
+{
+	if(!isObject(%this.genQueue))
+		%this.initGen();
+
+	if(!isObject(%this.terrain))
+		%this.initSimplex(%seed, %freq, %iter, %persist, %low, %high, %addheight);
+
+	if(%startX > %endX)
+	{
+		%s = %startX;
+		%e = %endX;
+		%endX = %s;
+		%startX = %e;
+	}
+	if(%startY > %endY)
+	{
+		%s = %startX;
+		%e = %endX;
+		%endX = %s;
+		%startX = %e;
+	}
+	if(%startY > %endY)
+	{
+		%s = %startY;
+		%e = %endY;
+		%endY = %s;
+		%startY = %e;
+	}
+	if(%startZ > %endZ)
+	{
+		%s = %startZ;
+		%e = %endZ;
+		%endZ = %s;
+		%startZ = %e;
+	}
+	%cX = %startX;
+	%cY = %startY;
+	%cZ = %startZ;
+	%this.genQueue.addJobToBack(psVoxGen_SimpArea, %this, %scale, %grass, %caves, %cp0, %cp1, %startX, %startY, %startZ, %endX, %endY, %endZ, %cX, %cY, %cZ);
 }

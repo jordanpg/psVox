@@ -58,7 +58,7 @@ function psVoxBuilder::buildIndBatch(%this)
 		}
 
 		%type = %obj.type;
-		if(%type.shapeType $= "Empty")
+		if(%type.shapeEmpty)
 		{
 			%list[%cur] = "";
 			%j--;
@@ -131,7 +131,7 @@ function psVoxBuilder::addBlock(%this, %obj)
 		return false;
 
 	%type = %obj.type;
-	if(%type.shapeType $= "Empty" || !isObject(%type.shape))
+	if(%type.shapeEmpty || !isObject(%type.shape))
 		return false;
 
 	%this.queue[%this.queue] = %obj;
@@ -174,5 +174,72 @@ function blastOff_InputpsVoxShape(%this, %obj)
 		%this.add(%new);
 		if(%new.sid !$= "")
 			%this.specObj[%new.sid] = %new;
+	}
+}
+
+function blastOff_OutputSUPERBASIC(%this, %offset, %rot, %bg, %brickhook, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5)
+{
+	if(!isBlastOff(%this))
+		return "!ERROR! Given object is not a valid blastOff ScriptGroup";
+
+	%f = isFunction(%brickhook);
+	%ct = %this.getCount();
+	for(%i = 0; %i < %ct; %i++)
+	{
+		%obj = %this.getObject(%i);
+
+		if(%obj.class !$= "blastOffObj_fxDTSBrick")
+			continue;
+
+		%db = %obj.getParameter("Datablock");
+		%db = $UINameTable[%db];
+		if(!isObject(%db))
+			continue;
+
+		%pos = %obj.getParameter("Position");
+		%angle = (%obj.getParameter("AngleID") + %rot) % 4;
+		%pos = rotateVector(%pos, "0 0 0", %rot);
+		%pos = VectorAdd(%pos, %offset);
+
+		%color = %obj.getParameter("ColorID");
+		if(isObject(%bg.client))
+			%client = %bg.client;
+		else
+			%client = 0;
+
+		%br = new fxDTSBrick()
+				{
+					client = %client;
+					stackBL_ID = %bg.bl_id;
+					
+					datablock = %db;
+					position = %pos;
+					rotation = angleToRot(%angle);
+					colorID = %color;
+					colorFXID = 0;
+					shapeFXID = 0;
+					printID = 0;
+
+					isBaseplate = %db.isBaseplate;
+					isPlanted = true;
+				};
+		%e = %br.plant();
+		if(%e != 0 && %e != 2)
+		{
+			%br.delete();
+			continue;
+		}
+
+		if(%f)
+		{
+			%hr = call(%brickhook, %br, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5);
+			if(!%hr)
+			{
+				%br.delete();
+				continue;
+			}
+		}
+		%bg.add(%br);
+		%br.setTrusted(true);
 	}
 }
