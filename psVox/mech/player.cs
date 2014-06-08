@@ -74,13 +74,19 @@ function serverCmdvoxBuild(%this)
 }
 
 //Resets sub chunks within a given radius.
-function serverCmdClearNearVox(%this, %r)
+function serverCmdClearNearVox(%this, %r, %n1, %n2, %n3, %n4, %n5, %n6, %n7, %n8)
 {
 	if(!%this.isSuperAdmin)
 		return;
 	if(!isObject(%this.player))
 		return;
 
+	%name = trim(%n1 SPC %n2 SPC %n3 SPC %n4 SPC %n5 SPC %n6 SPC %n7 SPC %n8);
+	%type = findBlockData(%name);
+	if(!isObject(%type))
+		%type = psVoxBlockData_None;
+
+	%ch = 0;
 	initContainerRadiusSearch(%this.player.getPosition(), %r, $TypeMasks::FxBrickAlwaysObjectType);
 	while(isObject(%obj = containerSearchNext()))
 	{
@@ -88,9 +94,13 @@ function serverCmdClearNearVox(%this, %r)
 		%sc = %bl.parent;
 		if(!isObject(%bl) || %done[%sc])
 			continue;
-		%sc.reset();
+		%sc.reset(%type);
 		%done[%sc] = true;
+		%ch++;
+		%list = trim(%list SPC "\c6(\c3" @ %sc.pos @ "\c6)");
 	}
+	messageClient(%this, '', "Reset \c3" @ %ch @ "\c0 sub chunks.");
+	messageClient(%this, '', %list);
 }
 
 //makes da rench work

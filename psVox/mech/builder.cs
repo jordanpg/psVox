@@ -11,8 +11,8 @@ function psVoxBuilder_New(%mode)
 	%this = new ScriptObject(psVoxBuilder)
 			{
 				mode = (%mode ? 1 : 0);
-				queue = 0;
 			};
+	%this.queue = new SimSet(psVoxBuilderQueue);
 
 	if(isObject(psVox))
 		psVox.builder = %this;
@@ -25,71 +25,79 @@ function psVoxBuilder_New(%mode)
 //Build a batch of blocks by planting them individually.
 function psVoxBuilder::buildIndBatch(%this)
 {
-	if(%this.queue <= 0)
+	%ct = %this.queue.getCount();
+	if(%ct <= 0)
 		return;
 
 	%size = $PsVox::BuilderBatchSize;
-	if(%size > %this.queue)
-		%size = %this.queue;
+	if(%size > %ct)
+		%size = %ct;
 
-	%j = 0;
-	%end = %this.queue - %size;
-	for(%i = %this.queue-1; %i >= %end; %i--)
+	%list = new SimSet();
+	%end = %ct - %size;
+	for(%i = %ct-1; %i >= %end; %i--)
 	{
-		%obj = %this.queue[%i];
-		%this.queue[%i] = "";
+		%obj = %this.queue.getObject(%i);
+		%this.queue.remove(%obj);
 		if(!isObject(%obj))
 			continue;
-		%list[%j] = %obj;
-		%j++;
+		%list.add(%obj);
 	}
-	%this.queue = %end;
 
+	%lct = %list.getCount();
 	%cur = 0;
-	%e = %j - 1;
+	%e = %lct - 1;
 	%i = 0;
-	while(%j > 0)
+	while((%ct = %list.getCount()) > 0)
 	{
-		%obj = %list[%cur];
-		if(!isObject(%obj))
+		for(%j = %ct-1; %j >= 0; %j--)
 		{
-			%cur++;
-			continue;
-		}
+			// echo("loop");
 
-		%type = %obj.type;
-		if(%type.shapeEmpty)
-		{
-			%list[%cur] = "";
-			%j--;
-			%cur++;
-			continue;
-		}
-
-		%bo = %type.shape;
-		if(!%bo.outputReady)
-		{
-			// echo("nop");
-			%cur++;
-			continue;
-		}
-
-		%obj.schedule(%curr * 10, _plant);
-		%list[%cur] = "";
-		%cur++;
-		%j--;
-		if(%cur > %e)
-		{
-			%i++;
-			if(%i > $PsVox::BuilderMaxRecurse)
+			%obj = %list.getObject(%j);
+			if(!isObject(%obj))
 			{
-				// echo("overcurse");
-				break;
+				// echo("rong");
+				continue;
 			}
-			%cur = 0;
-			// echo(%i);
+
+			%type = %obj.type;
+			if(%type.shapeEmpty)
+			{
+				// echo("empty");
+				%list.remove(%obj);
+				continue;
+			}
+
+			%bo = %type.shape;
+			if(!%bo.outputReady)
+			{
+				// echo("nop");
+				continue;
+			}
+
+			// echo("plant");
+			%obj.schedule(%cur * 10, _plant);
+			%list.remove(%obj);
+		}
+		%i++;
+		if(%i > $PsVox::BuilderMaxRecurse)
+		{
+			// echo("overcurse");
+			%over = true;
+			break;
 		}
 	}
+	if(%over)
+	{
+		%ct = %list.getCount();
+		for(%i = 0; %i < %ct; %i++)
+			%this.queue.add(%list.getObject(%i));
+	}
+	%list.delete();
+
+	if(%this.queue.getCount() == 0)
+		%this.onFinishedBuilding();
 }
 
 //Build a batch of blocks by creating a blastoff shape for them (unfinished)
@@ -130,12 +138,10 @@ function psVoxBuilder::addBlock(%this, %obj)
 	if(!isObject(%obj) || %obj.class !$= "psVoxBlock")
 		return false;
 
-	%type = %obj.type;
-	if(%type.shapeEmpty || !isObject(%type.shape))
+	if(%obj.type.shapeEmpty || !isObject(%obj.type.shape))
 		return false;
 
-	%this.queue[%this.queue] = %obj;
-	%this.queue++;
+	%this.queue.add(%obj);
 	return true;
 }
 
@@ -145,7 +151,7 @@ function psVoxBuilder::tick(%this)
 	if(isEventPending(%this.tick))
 		cancel(%this.tick);
 
-	if(%this.queue > 0)
+	if(%this.queue.getCount() > 0)
 	{
 		if(%mode)
 			%this.buildShapeBatch();
@@ -154,6 +160,11 @@ function psVoxBuilder::tick(%this)
 	}
 
 	$PsVox::BuilderTick = %this.tick = %this.schedule($PsVox::BuilderSpeed, tick);
+}
+
+function psVoxBuilder::onFinishedBuilding(%this)
+{
+	//pass
 }
 
 //Unfinished blastoff input for builder shapes.
@@ -177,7 +188,7 @@ function blastOff_InputpsVoxShape(%this, %obj)
 	}
 }
 
-function blastOff_OutputSUPERBASIC(%this, %offset, %rot, %bg, %brickhook, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5)
+function blastOff_OutputSUPERBASIC(%this, %offset, %rot, %bg, %brickhook, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5, %hook7, %hook8, %hook9)
 {
 	if(!isBlastOff(%this))
 		return "!ERROR! Given object is not a valid blastOff ScriptGroup";
@@ -232,7 +243,7 @@ function blastOff_OutputSUPERBASIC(%this, %offset, %rot, %bg, %brickhook, %hook0
 
 		if(%f)
 		{
-			%hr = call(%brickhook, %br, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5);
+			%hr = call(%brickhook, %br, %hook0, %hook1, %hook2, %hook3, %hook4, %hook5, %hook7, %hook8, %hook9);
 			if(!%hr)
 			{
 				%br.delete();

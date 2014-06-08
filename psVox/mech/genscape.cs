@@ -105,9 +105,9 @@ function psVoxGenQueue::onQueueFinished(%this)
 
 
 //Generation job to make a chunk.
-function psVoxGen_Chunk(%this, %x, %y, %z)
+function psVoxGen_Chunk(%this, %x, %y, %z, %type)
 {
-	%this.createChunk(%x, %y, %z SPC %z);
+	%this.createChunk(%x, %y, %z SPC %z, %type);
 }
 
 //Generation job to make a group of chunks.

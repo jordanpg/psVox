@@ -67,8 +67,8 @@ if(!isObject(psVoxBlockData_Empty))
 {
 	new ScriptObject(psVoxBlockData_Empty)
 	{
-		class = "psVoxBlockData_Trench";
-		superClass = "psVoxBlockData";
+		// class = "psVoxBlockData_Trench";
+		class = "psVoxBlockData";
 		name = "Empty";
 
 		shapeType = "Empty";

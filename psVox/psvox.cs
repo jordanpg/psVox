@@ -135,6 +135,15 @@ function psVox::getChunkPos(%this, %pos)
 	return %x SPC %y @ %z;
 }
 
+function psVox::getChunkPos3(%this, %x, %y, %z)
+{
+	%x = mFloor(%x / %this.chunkSize);
+	%y = mFloor(%y / %this.chunkSize);
+	if(%z !$= "")
+		%z = " " @ mFloor(%z / %this.chunkSize);
+	return %x SPC %y @ %z;
+}
+
 //Used to get a Torque space position from a voxel world position.
 function psVox::getRealPos(%this, %vPos)
 {
@@ -162,16 +171,20 @@ function psVox::getVoxPos(%this, %rPos)
 //Used to get a voxel world position from a local sub chunk position.
 function psVoxSubChunk::getGlobalPos(%this, %pos)
 {
-	%psVox = %this.psVox;
 	%x = getWord(%pos, 0);
 	%y = getWord(%pos, 1);
 	%z = getWord(%pos, 2);
-	%gCX = getWord(%this.pos, 0);
-	%gCY = getWord(%this.pos, 1);
-	%gCZ = getWord(%this.pos, 2);
-	%gX = %gCX * %psVox.chunkSize;
-	%gY = %gCY * %psVox.chunkSize;
-	%gZ = %gCZ * %psVox.chunkSize;
+	%gX = %this.posX * %this.psVox.chunkSize;
+	%gY = %this.posY * %this.psVox.chunkSize;
+	%gZ = %this.posZ * %this.psVox.chunkSize;
+	return (%x + %gX) SPC (%y + %gY) SPC (%z + %gZ);
+}
+
+function psVoxSubChunk::getGlobalPos3(%this, %x, %y, %z)
+{
+	%gX = %this.posX * %this.psVox.chunkSize;
+	%gY = %this.posY * %this.psVox.chunkSize;
+	%gZ = %this.posZ * %this.psVox.chunkSize;
 	return (%x + %gX) SPC (%y + %gY) SPC (%z + %gZ);
 }
 
@@ -189,6 +202,8 @@ function psVox::createChunk(%this, %cX, %cY, %preload)
 				parent = %this;
 
 				pos = %cX SPC %cY;
+				posX = %cX;
+				posY = %cY;
 
 				zMin = 0;
 				zMax = 0;
@@ -258,6 +273,10 @@ function psVoxChunk::createSubChunk(%this, %cZ, %type)
 			psVox = %this.parent;
 
 			pos = %this.pos SPC %cZ;
+			posX = %this.posX;
+			posY = %this.posY;
+			posZ = %cZ;
+
 			init = 0;
 		};
 	%c.init(%type);
@@ -339,6 +358,7 @@ function psVoxSubChunk::createBlock(%this, %x, %y, %z, %data)
 	if(isObject(%block))
 		return %this.setBlock(%x, %y, %z, %data);
 
+	%bpos = %this.getGlobalPos3(%x, %y, %z);
 	%upos = strReplace(%this.pos, " ", "_");
 	%block = new ScriptObject("psVoxBlock_" @ %data.name)
 			{
@@ -348,7 +368,14 @@ function psVoxSubChunk::createBlock(%this, %x, %y, %z, %data)
 
 				cPos = %this.pos;
 				lPos = %x SPC %y SPC %z;
-				pos = %this.getGlobalPos(%x SPC %y SPC %z);
+				lPosX = %x;
+				lPosY = %y;
+				lPosZ = %z;
+				pos = %bpos;
+				posX = getWord(%bpos, 0);
+				posY = getWord(%bpos, 1);
+				posZ = getWord(%bpos, 2);
+
 				rotation = 0;
 				type = %data;
 			};
@@ -376,7 +403,7 @@ function psVoxSubChunk::setBlock(%this, %x, %y, %z, %data, %noupdate, %carryProp
 {
 	if(%data.class !$= "psVoxBlockData" && %data.superClass !$= "psVoxBlockData")
 		return -1;
-	%b = %this.getBlock(%x, %y, %z);
+	%b = %this.block[%x, %y, %z];
 	if(isObject(%b))
 	{
 		if(%b.type.getID() == %data.getID())
@@ -386,6 +413,7 @@ function psVoxSubChunk::setBlock(%this, %x, %y, %z, %data, %noupdate, %carryProp
 				{
 					type = %data;
 				};
+		%b.props.parent = %new;
 		// echo(%new.getID());
 		// echo(%b.getID());
 		%b.schedule(33, delete);
@@ -457,14 +485,14 @@ function psVoxChunk::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 //Set a block at the given voxel world position.
 function psVox::setBlock(%this, %x, %y, %z, %data, %noup, %carry)
 {
-	%cpos = %this.getChunkPos(%x SPC %y SPC %z);
+	%cpos = %this.getChunkPos3(%x, %y, %z);
 	%cX = getWord(%cpos, 0);
 	%cY = getWord(%cpos, 1);
 	%cZ = getWord(%cpos, 2);
 	%sc = %this.createSubChunk(%cX, %cY, %cZ);
 	if(!isObject(%sc))
 		return -1;
-	return %sc.setBlock((%x % 16), (%y % 16), (%z % 16), %data, %noup, %carry);
+	return %sc.setBlock((%x % %this.chunkSize), (%y % %this.chunkSize), (%z % %this.chunkSize), %data, %noup, %carry);
 }
 
 //Get the block at the given local position.
@@ -493,7 +521,7 @@ function psVoxChunk::getBlock(%this, %x, %y, %z)
 //Get the block at the given voxel world position.
 function psVox::getBlock(%this, %x, %y, %z)
 {
-	%cpos = %this.getChunkPos(%x SPC %y SPC %z);
+	%cpos = %this.getChunkPos3(%x, %y, %z);
 	%cX = getWord(%cpos, 0);
 	%cY = getWord(%cpos, 1);
 	%cZ = getWord(%cpos, 2);
@@ -508,7 +536,7 @@ function psVox::getBlock(%this, %x, %y, %z)
 }
 
 //Resets all blocks within the chunk to the None type.
-function psVoxSubChunk::reset(%this)
+function psVoxSubChunk::reset(%this, %d)
 {
 	if(isEventPending(%this.reset))
 		cancel(%this.reset);
@@ -520,12 +548,13 @@ function psVoxSubChunk::reset(%this)
 	%to = %this.unchecked - 512;
 	if(%to < 0)
 		%to = 0;
+	%d = (isObject(%d) ? %d : psVoxBlockData_None);
 	for(%i = %this.unchecked; %i >= %to; %i--)
 	{
 		%obj = %this.getObject(%i);
 		if(!isObject(%obj))
 			continue;
-		%r = %obj.schedule(%t * 5, setType, psVoxBlockData_None, 1);
+		%r = %obj.schedule(%t * 5, setType, %d, 1);
 		%this.unchecked--;
 		%t++;
 	}
@@ -536,9 +565,9 @@ function psVoxSubChunk::reset(%this)
 }
 
 //Blastoff hook for planting blocks.
-function blastOffHook_psVoxCheck(%this, %box, %block)
+function blastOffHook_psVoxCheck(%this, %bx0, %bx1, %by0, %by1, %bz0, %bz1, %block)
 {
-	%in = brickInBox(%this, %box, 0, 0);
+	%in = brickInBoxDef(%this, %bx0, %bx1, %by0, %by1, %bz0, %bz1);
 	if(%in)
 	{
 		%block.bricks.add(%this);
@@ -562,10 +591,7 @@ function psVoxBlock::setRotation(%this, %r)
 //Set the block at this position to a different type.
 function psVoxBlock::setType(%this, %type, %noup)
 {
-	%x = getWord(%this.lPos, 0);
-	%y = getWord(%this.lPos, 1);
-	%z = getWord(%this.lPos, 2);
-	return %this.parent.setBlock(%x, %y, %z, %type, %noup);
+	return %this.parent.setBlock(%this.lposx, %this.lposy, %this.lposz, %type, %noup);
 }
 
 //Clear all bricks the block has created.
@@ -578,7 +604,7 @@ function psVoxBlock::clearBricks(%this)
 	%final = %ct - 100;
 	if(%final < 0)
 		%final = 0;
-	for(%i = %bricks.getCount(); %i > %final; %i--)
+	for(%i = %ct-1; %i > %final; %i--)
 	{
 		%b = %bricks.getObject(%i);
 		%b.schedule(0, delete);
@@ -599,7 +625,7 @@ function psVoxBlock::transistion(%this)
 		%final = %ct - 100;
 		if(%final < 0)
 			%final = 0;
-		for(%i = %bricks.getCount()-1; %i >= %final; %i--)
+		for(%i = %ct-1; %i >= %final; %i--)
 		{
 			%b = %bricks.getObject(%i);
 			if(!isObject(%b))
@@ -658,20 +684,19 @@ function psVoxBlock::_plant(%this)
 	%xMax = %rX + %hCell;
 	%yMax = %rY + %hCell;
 	%zMax = %rZ + (!%type.posFromBottom ? %hCell : %cell);
-	%box = %xMin SPC %yMin SPC %zMin SPC %xMax SPC %yMax SPC %zMax;
 
 	if(isObject(%bo))
 	{
 		if(!%type.shapeBasic)
 		{
 			%bo.setOutput("BASICPHYS");
-			%bo.output(%rPos, %this.rotation, -1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %box, %this);
+			%bo.output(%rPos, %this.rotation, -1, %this.psVox.brickGroup, "", false, true, true, false, "blastOffHook_psVoxCheck", %xMin, %xMax, %yMin, %yMax, %zMin, %zMax, %this);
 			return true;
 		}
 		else
 		{
 			%bo.setOutput("SUPERBASIC");
-			%bo.output(%rPos, %this.rotation, %this.psVox.brickGroup, "blastOffHook_psVoxCheck", %box, %this);
+			%bo.output(%rPos, %this.rotation, %this.psVox.brickGroup, "blastOffHook_psVoxCheck", %xMin, %xMax, %yMin, %yMax, %zMin, %zMax, %this);
 		}
 	}
 }

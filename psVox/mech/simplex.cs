@@ -985,20 +985,28 @@ function psVoxGen_SimpChunk_3(%this, %chunk, %map, %start, %end)
 			for(%x = %minX; %x <= %maxX; %x++)
 			{
 				%c = %map.cell[%x, %y, %z];
+				%mX = %x % %this.chunkSize;
+				%mY = %y % %this.chunkSize;
+				%mZ = %z % %this.chunkSize;
 				if(%c == 1)
 				{
-					%this.schedule(mFloor(%i / 10) * 50, setBlock, %x, %y, %z, psVoxBlockData_Dirt2x, 1);
+					%chunk.schedule(mFloor(%i / 10) * 33, setBlock, %mX, %mY, %mZ, psVoxBlockData_Dirt2x, 1);
 					%i++;
 				}
-				else if(%c == -1)
-				{
-					%this.schedule(mFloor(%b / 25) * 33, setBlock, %x, %y, %z, psVoxBlockData_Empty, 1);
-					%b++;
-				}
+				// else if(%c == -1)
+				// {
+				// 	%chunk.schedule(mFloor(%b / 10) * 33, setBlock, %mX, %mY, %mZ, psVoxBlockData_Empty, 1);
+				// 	%b++;
+				// }
 				else if(%c == 2)
 				{
-					%this.schedule(mFloor(%i / 10) * 50, setBlock, %x, %y, %z, psVoxBlockData_Grass2x, 1);
+					%chunk.schedule(mFloor(%i / 10) * 33, setBlock, %mX, %mY, %mZ, psVoxBlockData_Grass2x, 1);
 					%i++;
+				}
+				else if(%c == 0)
+				{
+					%chunk.schedule(mFloor(%b / 10) * 33, setBlock, %mX, %mY, %mZ, psVoxBlockData_None, 1);
+					%b++;
 				}
 			}
 		}
@@ -1035,7 +1043,7 @@ function psVox::Gen_Simplex(%this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, 
 
 	%chunk = %this.getSubChunk(%cX, %cY, %cZ);
 	if(!isObject(%chunk))
-		%gen.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ);
+		%gen.addJobToBack(psVoxGen_Chunk, %this, %cX, %cY, %cZ, psVoxBlockData_Empty);
 
 	%gen.addJobToBack(psVoxGen_SimpChunk, %this, %cX, %cY, %cZ, %scale, %grass, %caves, %cp0, %cp1, %shift);
 }

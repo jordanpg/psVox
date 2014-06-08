@@ -50,6 +50,36 @@ function brickInBox(%this, %box, %rel, %ignoreZ, %boxobj)
 	return true;
 }
 
+function brickInBoxDef(%this, %bx0, %bx1, %by0, %by1, %bz0, %bz1, %ignoreZ)
+{
+	if(!isObject(%this) || %this.getClassName() !$= "fxDTSBrick")
+		return false;
+
+	// echo(%this.isPlanted);
+	%inbox = %this.getWorldBox();
+	%minX = getWord(%inbox, 0);
+	%minY = getWord(%inbox, 1);
+	%minZ = getWord(%inbox, 2);
+	%maxX = getWord(%inbox, 3);
+	%maxY = getWord(%inbox, 4);
+	%maxZ = getWord(%inbox, 5);
+	// echo(INBOX SPC %inbox);
+
+	if(%minX < %bx0)
+		return false;
+	if(%minY < %by0)
+		return false;
+	if(%minZ < %bz0 && !%ignoreZ)
+		return false;
+	if(%maxX > %bx1)
+		return false;
+	if(%maxY > %by1)
+		return false;
+	if(%maxZ > %bz1 && !%ignoreZ)
+		return false;
+	return true;
+}
+
 function pointInBox(%point, %box, %bounds)
 {
 	%minX = getWord(%box, 0) - %bounds;
